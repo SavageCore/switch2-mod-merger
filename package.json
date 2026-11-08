@@ -1,0 +1,22 @@
+{
+  "name": "switch2-mod-merger",
+  "version": "0.1.0",
+  "description": "Client-side web app to merge Switch 2 mods that replace the same .sarc.zs/.pack.zs archives. No uploads, everything runs in the browser.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@bokuweb/zstd-wasm": "0.0.27",
+    "jszip": "3.10.2"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.65.0",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
+  },
+  "license": "MIT"
+}

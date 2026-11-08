@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>switch2-mod-merger - combine Switch 2 mods in your browser</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>switch2-mod-merger</h1>
+        <p>
+          Combine Switch 2 mods that replace the same
+          <code>.sarc.zs</code> / <code>.pack.zs</code> archives.
+          Everything runs locally in your browser - your files are never uploaded anywhere.
+        </p>
+      </header>
+
+      <section id="upload">
+        <h2>1. Mods</h2>
+        <div id="dropzone" class="dropzone" tabindex="0">
+          <p>Drop mod <code>.zip</code> files here, or <label class="filelink">choose files<input id="modFiles" type="file" accept=".zip" multiple hidden /></label></p>
+        </div>
+        <ul id="modList" class="filelist"></ul>
+
+        <h2>2. Vanilla archives <span class="optional">(optional, enables auto-merge)</span></h2>
+        <p class="hint">
+          If two mods change the <em>same</em> file, the merger needs the unmodded archive to tell whose change is whose.
+          Extract e.g. <code>general_format.Product_180.sarc.zs</code> from your game dump and add it here
+          (a plain <code>.sarc</code> / <code>.pack</code> also works). Without it, you pick a winner per file group below.
+        </p>
+        <p><label class="filelink">Choose vanilla files<input id="vanillaFiles" type="file" accept=".sarc.zs,.sarc,.zs" multiple hidden /></label></p>
+        <ul id="vanillaList" class="filelist"></ul>
+
+        <p><button id="analyzeBtn" disabled>Analyze mods</button> <span id="analyzeStatus" class="status"></span></p>
+      </section>
+
+      <section id="results" hidden>
+        <h2>3. Resolve differences</h2>
+        <div id="summary"></div>
+        <div id="bulkBar"></div>
+        <div id="archives"></div>
+        <div id="loose"></div>
+        <div id="exefs"></div>
+        <h2>4. Merge</h2>
+        <p><button id="mergeBtn">Merge &amp; download</button></p>
+        <div id="mergeProgress" class="progress" hidden><div id="mergeBar"></div></div>
+        <p id="mergeStatus" class="status"></p>
+        <p id="downloadWrap" hidden><a id="downloadLink" class="button" href="#">Download merged mod (.zip)</a></p>
+        <details id="manifestWrap" hidden><summary>Merge manifest</summary><pre id="manifestPre"></pre></details>
+      </section>
+
+      <section id="errors" hidden>
+        <h2>Could not merge</h2>
+        <pre id="errorPre" class="error"></pre>
+      </section>
+
+      <footer>
+        <p>Install the downloaded zip as one mod folder in your emulator (<code>load/&lt;title-id&gt;/…</code>). Only use with mods built for the same game version.</p>
+      </footer>
+    </main>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,99 @@
+:root {
+  --bg: #14161b;
+  --fg: #e8e9eb;
+  --muted: #9aa0aa;
+  --card: #1d2026;
+  --border: #33373f;
+  --accent: #e60012;
+  --accent-fg: #ffffff;
+  --good: #3fb950;
+  --warn: #d29922;
+  --bad: #f85149;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 860px; margin: 0 auto; padding: 1.5rem; }
+header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
+code { background: #00000055; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
+section { margin-top: 2rem; }
+h2 { font-size: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+.optional { color: var(--muted); font-weight: normal; font-size: 0.9rem; }
+.hint { color: var(--muted); font-size: 0.92rem; }
+
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+.dropzone.over { border-color: var(--accent); color: var(--fg); }
+.filelink { color: var(--accent); cursor: pointer; text-decoration: underline; }
+.filelist { list-style: none; padding: 0; }
+.filelist li {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.7rem;
+  margin: 0.3rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+.filelist button { flex-shrink: 0; }
+
+button, .button {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.55rem 1.1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+button:disabled { opacity: 0.45; cursor: default; }
+button.secondary { background: transparent; border: 1px solid var(--border); color: var(--fg); padding: 0.3rem 0.7rem; font-size: 0.85rem; }
+.status { color: var(--muted); margin-left: 0.5rem; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  margin: 0.8rem 0;
+}
+.card h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.card h4 { margin: 0.8rem 0 0.3rem; font-size: 0.92rem; color: var(--muted); }
+.pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  border-radius: 99px;
+  padding: 0.1em 0.6em;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+.pill.good { background: #3fb95033; color: var(--good); }
+.pill.warn { background: #d2992233; color: var(--warn); }
+.pill.bad { background: #f8514933; color: var(--bad); }
+.pick { display: block; padding: 0.15rem 0; }
+.pick input { margin-right: 0.5rem; }
+.filetoggle { color: var(--muted); font-size: 0.85rem; }
+ul.compact { margin: 0.3rem 0; padding-left: 1.2rem; font-size: 0.9rem; }
+ul.compact li { margin: 0.1rem 0; }
+.error { color: var(--bad); white-space: pre-wrap; }
+.progress { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); height: 1.2rem; overflow: hidden; margin-top: 0.5rem; }
+.progress > div { background: var(--accent); height: 100%; width: 0%; transition: width 0.15s; }
+details { margin-top: 1rem; }
+pre { background: #00000066; padding: 0.7rem; border-radius: var(--radius); overflow-x: auto; font-size: 0.8rem; }
+footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
+.bulkrow { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin: 0.5rem 0; }

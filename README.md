@@ -2,7 +2,7 @@
 
 Combine Switch 2 mods that replace the same compressed archives, entirely in your browser. No uploads, no server - your files never leave your machine.
 
-**Live app:** `https://<user>.github.io/switch2-mod-merger/` (published via GitHub Pages)
+**Live app:** https://savagecore.github.io/switch2-mod-merger/ (published via GitHub Pages)
 
 ## What it does
 

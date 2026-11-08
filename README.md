@@ -34,16 +34,16 @@ Extract the downloaded zip into a new folder under your emulator's mod directory
 ## Development
 
 ```sh
-npm install
-npm test        # unit tests (synthetic fixtures only, no game files)
-npm run dev     # local dev server
-npm run build   # production build to dist/
+pnpm install
+pnpm test        # unit tests (synthetic fixtures only, no game files)
+pnpm dev         # local dev server
+pnpm build       # production build to dist/
 ```
 
 `test/e2e.mjs` drives the production build in headless Chromium against **real** mod zips. It needs two mod zips on disk and is intentionally not part of CI (game files must never enter this repo):
 
 ```sh
-npm run build
+pnpm build
 MOD_A=/path/to/modA.zip MOD_B=/path/to/modB.zip node test/e2e.mjs
 ```
 

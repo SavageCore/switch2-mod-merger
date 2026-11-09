@@ -31,8 +31,9 @@ It refuses to merge mods built for different game versions (detected from patch 
 
 No manual install: on the game's configuration page (right-click the game, Configure, Add-ons) use
 **Import Mod from ZIP** and pick the downloaded file. The emulator installs it as one mod -
-the output zip already has the expected `romfs/` + `exefs/` layout. Afterwards, disable the source
-mods so they don't shadow the merged copy.
+the output zip already has the expected layout, with a top-level folder named after the sources
+(e.g. `ClassicGP+SecretTracks/romfs`, `.../exefs`), so the mod name field is pre-filled.
+Afterwards, disable the source mods so they don't shadow the merged copy.
 
 ## Development
 

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 import { buildSarc, parseSarc } from '../src/sarc.js';
 import { zstdCompress, zstdDecompress } from '../src/zstd.js';
-import { analyzeMods, buildMerged, scanSharedArchives } from '../src/merge.js';
+import { analyzeMods, buildMerged, scanSharedArchives, mergedModName } from '../src/merge.js';
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -35,7 +35,7 @@ describe('analyze + merge', () => {
     expect(analysis.archives[0].groups).toHaveLength(0);
     const { zipBytes } = await buildMerged(analysis, { picks: new Map() });
     const out = await JSZip.loadAsync(zipBytes);
-    const got = await out.file('romfs/System/Test/data.sarc.zs').async('uint8array');
+    const got = await out.file('A+B/romfs/System/Test/data.sarc.zs').async('uint8array');
     const want = await (await JSZip.loadAsync(a.arrayBuffer)).file('romfs/System/Test/data.sarc.zs').async('uint8array');
     expect(Buffer.from(got).equals(Buffer.from(want))).toBe(true);
   });
@@ -48,7 +48,7 @@ describe('analyze + merge', () => {
     expect(analysis.archives[0].rel).toBe('Pack/Actor.pack.zs');
     const { zipBytes } = await buildMerged(analysis, { picks: new Map([['Pack/Actor.pack.zs\nActor/a.bgyml', 1]]) });
     const out = await JSZip.loadAsync(zipBytes);
-    const mergedZs = await out.file('romfs/Pack/Actor.pack.zs').async('uint8array');
+    const mergedZs = await out.file('A+B/romfs/Pack/Actor.pack.zs').async('uint8array');
     const { files } = parseSarc(await zstdDecompress(mergedZs));
     expect(dec.decode(files[0].data)).toBe('2');
   });
@@ -79,7 +79,7 @@ describe('analyze + merge', () => {
     }
     const { zipBytes, manifest } = await buildMerged(analysis, { picks: picked });
     const out = await JSZip.loadAsync(zipBytes);
-    const mergedZs = await out.file('romfs/System/Test/data.sarc.zs').async('uint8array');
+    const mergedZs = await out.file('ClassicGP+Light/romfs/System/Test/data.sarc.zs').async('uint8array');
     const { files } = parseSarc(await zstdDecompress(mergedZs));
     const got = new Map(files.map((f) => [f.name, dec.decode(f.data)]));
     expect(got.get('Gyml/Cups/Banana.bgyml')).toBe('classic-cup');
@@ -102,7 +102,7 @@ describe('analyze + merge', () => {
     expect(analysis.archives[0].autoResolved).toHaveLength(1);
     const { zipBytes } = await buildMerged(analysis, { picks: new Map() });
     const out = await JSZip.loadAsync(zipBytes);
-    const mergedZs = await out.file('romfs/System/Test/data.sarc.zs').async('uint8array');
+    const mergedZs = await out.file('A+B/romfs/System/Test/data.sarc.zs').async('uint8array');
     const { files } = parseSarc(await zstdDecompress(mergedZs));
     expect(dec.decode(files.find((f) => f.name === 'Gyml/Cups/Banana.bgyml').data)).toBe('mod-cup');
   });
@@ -114,7 +114,7 @@ describe('analyze + merge', () => {
     expect(analysis.exefs[0].conflicts).toHaveLength(0);
     const { zipBytes } = await buildMerged(analysis, { picks: new Map() });
     const out = await JSZip.loadAsync(zipBytes);
-    const text = await out.file('exefs/BID.pchtxt').async('string');
+    const text = await out.file('A+B/exefs/BID.pchtxt').async('string');
     expect(text).toContain('0001 AAAA');
     expect(text).toContain('0002 BBBB');
   });
@@ -130,6 +130,27 @@ describe('analyze + merge', () => {
     const b = await modZip('B', { sarcEntries: [['Gyml/X/a.bgyml', '2']] });
     const analysis = await analyzeMods([a, b]);
     await expect(buildMerged(analysis, { picks: new Map() })).rejects.toThrow(/No resolution/);
+  });
+});
+
+describe('mergedModName', () => {
+  it('joins mod names with +', () => {
+    expect(mergedModName(['ClassicGP', 'SecretTracks'])).toBe('ClassicGP+SecretTracks');
+  });
+
+  it('strips filename-unsafe characters', () => {
+    expect(mergedModName(['a/b', 'c:d*e'])).toBe('a_b+c_d_e');
+  });
+
+  it('lands in the manifest and the zip top level', async () => {
+    const a = await modZip('A', { loose: { 'x.txt': '1' } });
+    const b = await modZip('B', { loose: { 'x.txt': '2' } });
+    const analysis = await analyzeMods([a, b]);
+    const { zipBytes, manifest } = await buildMerged(analysis, { picks: new Map([['loose:romfs/x.txt', 1]]) });
+    expect(manifest.name).toBe('A+B');
+    const out = await JSZip.loadAsync(zipBytes);
+    expect(out.file('A+B/romfs/x.txt')).not.toBeNull();
+    expect(out.file('A+B/switch2-mod-merger-manifest.json')).not.toBeNull();
   });
 });
 

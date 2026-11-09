@@ -28,6 +28,14 @@ function fnv1a(bytes) {
   return (h >>> 0).toString(16);
 }
 
+/** Folder/file-safe display name for the merged mod: ClassicGP+SecretTracks. */
+export function mergedModName(modNames) {
+  const clean = modNames
+    .map((n) => n.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').trim().slice(0, 60))
+    .filter((n) => n.length > 0);
+  return (clean.length > 0 ? clean : ['merged']).join('+');
+}
+
 /** Compressed SARC archives mods ship: .sarc.zs and TOTK-style .pack.zs. */
 export function isGameArchive(rel) {
   const lower = rel.toLowerCase();
@@ -273,6 +281,7 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
   const picks = resolutions.picks ?? new Map();
   const manifest = {
     generator: 'switch2-mod-merger',
+    name: mergedModName(mods.map((m) => m.name)),
     sources: mods.map((m) => m.name),
     created: new Date().toISOString(),
     archives: {},
@@ -280,9 +289,12 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
     exefs: {},
   };
 
+  // Top-level folder carries the combined name so the emulator's importer
+  // pre-fills it (e.g. ClassicGP+SecretTracks/romfs, .../exefs).
   const out = new JSZip();
-  const romfs = out.folder('romfs');
-  const exefs = out.folder('exefs');
+  const root = out.folder(manifest.name);
+  const romfs = root.folder('romfs');
+  const exefs = root.folder('exefs');
 
   const archiveJobs = analysis.archives;
   let step = 0;
@@ -384,7 +396,7 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
     }
   }
 
-  out.file('switch2-mod-merger-manifest.json', JSON.stringify(manifest, null, 2));
+  root.file('switch2-mod-merger-manifest.json', JSON.stringify(manifest, null, 2));
   const zipBytes = new Uint8Array(await out.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }));
   onProgress(total, total, 'Done');
   return { zipBytes, manifest };

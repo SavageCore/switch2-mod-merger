@@ -1,4 +1,4 @@
-import { analyzeMods, buildMerged, scanSharedArchives } from './merge.js';
+import { analyzeMods, buildMerged, scanSharedArchives, mergedModName } from './merge.js';
 
 const state = {
   mods: [], // { name, arrayBuffer }
@@ -413,7 +413,7 @@ async function onMerge() {
     state.outputUrl = URL.createObjectURL(blob);
     const link = $('downloadLink');
     link.href = state.outputUrl;
-    link.download = `${state.analysis.mods.join('+')}-merged.zip`;
+    link.download = `${mergedModName(state.analysis.mods)}-merged.zip`;
     $('downloadWrap').hidden = false;
     link.click();
     const summary = { ...manifest };

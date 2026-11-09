@@ -9,7 +9,24 @@
   --good: #3fb950;
   --warn: #d29922;
   --bad: #f85149;
+  --code-bg: #00000055;
   --radius: 8px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f4f5f7;
+    --fg: #1c1e21;
+    --muted: #606770;
+    --card: #ffffff;
+    --border: #d6d9de;
+    --accent: #c50010;
+    --accent-fg: #ffffff;
+    --good: #1a7f37;
+    --warn: #9a6700;
+    --bad: #d1242f;
+    --code-bg: #0000000d;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -20,8 +37,11 @@ body {
   font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 main { max-width: 860px; margin: 0 auto; padding: 1.5rem; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+a.button:hover { text-decoration: none; }
 header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
-code { background: #00000055; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
+code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
 section { margin-top: 2rem; }
 h2 { font-size: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
 .optional { color: var(--muted); font-weight: normal; font-size: 0.9rem; }
@@ -96,6 +116,19 @@ ul.compact li { margin: 0.1rem 0; }
 .progress { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); height: 1.2rem; overflow: hidden; margin-top: 0.5rem; }
 .progress > div { background: var(--accent); height: 100%; width: 0%; transition: width 0.15s; }
 details { margin-top: 1rem; }
-pre { background: #00000066; padding: 0.7rem; border-radius: var(--radius); overflow-x: auto; font-size: 0.8rem; }
-footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
+pre { background: var(--code-bg); padding: 0.7rem; border-radius: var(--radius); overflow-x: auto; font-size: 0.8rem; }
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+footer p { margin: 0.4rem 0; }
+#siteFooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  align-items: baseline;
+}
 .bulkrow { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin: 0.5rem 0; }

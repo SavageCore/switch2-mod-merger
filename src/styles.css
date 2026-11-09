@@ -7,6 +7,7 @@
   --border: #33373f;
   --accent: #e60012;
   --accent-fg: #ffffff;
+  --secondary: #2b3038;
   --good: #3fb950;
   --warn: #d29922;
   --bad: #f85149;
@@ -22,6 +23,7 @@
   --border: #d6d9de;
   --accent: #c50010;
   --accent-fg: #ffffff;
+  --secondary: #e2e4e9;
   --good: #1a7f37;
   --warn: #9a6700;
   --bad: #d1242f;
@@ -95,7 +97,7 @@ button, .button {
   vertical-align: middle;
 }
 button:disabled { opacity: 0.45; cursor: default; }
-button.secondary { background: transparent; border: 1px solid var(--border); color: var(--fg); padding: 0.3rem 0.7rem; font-size: 0.85rem; }
+button.secondary { background: var(--secondary); border: 1px solid var(--border); color: var(--fg); padding: 0.3rem 0.7rem; font-size: 0.85rem; }
 button.secondary.match { padding: 0.55rem 1.1rem; font-size: 1rem; }
 .status { color: var(--muted); margin-left: 0.5rem; }
 

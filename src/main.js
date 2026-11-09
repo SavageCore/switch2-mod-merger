@@ -454,6 +454,13 @@ function wireDrop(zone, onFiles) {
 }
 
 function init() {
+  $('themeBtn').addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = next;
+    try {
+      localStorage.setItem('s2mm-theme', next);
+    } catch {}
+  });
   const short = typeof __COMMIT_SHORT__ !== 'undefined' ? __COMMIT_SHORT__ : 'dev';
   const full = typeof __COMMIT_FULL__ !== 'undefined' ? __COMMIT_FULL__ : '';
   const hashEl = $('buildHash');

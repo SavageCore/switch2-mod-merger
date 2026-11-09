@@ -168,7 +168,7 @@ describe('mergedModName', () => {
     expect(manifest.name).toBe('A+B');
     const out = await JSZip.loadAsync(zipBytes);
     expect(out.file('A+B/romfs/x.txt')).not.toBeNull();
-    expect(out.file('A+B/switch2-mod-merger-manifest.json')).not.toBeNull();
+    expect(out.file('A+B/switch2-mod-merger-manifest.json')).toBeNull();
   });
 });
 

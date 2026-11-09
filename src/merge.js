@@ -422,7 +422,8 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
     }
   }
 
-  root.file('switch2-mod-merger-manifest.json', JSON.stringify(manifest, null, 2));
+  // Note: the manifest is returned for the on-page summary, not written into
+  // the zip, so the download stays a clean mod folder.
   const zipBytes = new Uint8Array(await out.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }));
   onProgress(total, total, 'Done');
   return { zipBytes, manifest };

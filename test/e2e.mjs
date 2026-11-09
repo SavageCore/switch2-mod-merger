@@ -33,6 +33,14 @@ page.on('console', (m) => {
 page.on('pageerror', (e) => errors.push(String(e)));
 
 await page.goto(base, { waitUntil: 'networkidle' });
+const firstTheme = await page.evaluate(() => document.documentElement.dataset.theme);
+if (firstTheme !== 'light' && firstTheme !== 'dark') throw new Error('no theme set: ' + firstTheme);
+await page.click('#themeBtn');
+const flipped = await page.evaluate(() => document.documentElement.dataset.theme);
+if (flipped === firstTheme) throw new Error('theme toggle did not flip');
+await page.reload({ waitUntil: 'networkidle' });
+const kept = await page.evaluate(() => document.documentElement.dataset.theme);
+if (kept !== flipped) throw new Error('theme did not persist across reload');
 const modA = process.env.MOD_A ?? '/tmp/opencode/mkw-merge/ClassicGP.zip';
 const modB = process.env.MOD_B ?? '/tmp/opencode/mkw-merge/LightOpt.zip';
 await page.setInputFiles('#modFiles', [modA, modB]);

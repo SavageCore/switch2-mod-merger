@@ -24,8 +24,7 @@ It refuses to merge mods built for different game versions (detected from patch 
 - ✅ Any number of mods sharing `.sarc.zs` archives
 - ✅ Same-file conflicts resolved by group pick or vanilla-assisted 3-way merge
 - ✅ `.pchtxt` concatenation with overlap detection, `.ips` passthrough
-- ❌ Two mods editing *different settings inside the same inner file* (e.g. two GYML tweaks in one `.bgyml`) - reported as a conflict, key-level merging is future work
-- ❌ Yaz0 (`.szs`) archives - Switch 2 mods use zstd; `.szs` support can be added on request
+- ❌ Two mods editing *different settings inside the same inner file* (e.g. two GYML tweaks in one `.bgyml`) - reported as a conflict
 
 ## Install a merged mod
 

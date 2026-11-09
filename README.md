@@ -51,10 +51,6 @@ MOD_A=/path/to/modA.zip MOD_B=/path/to/modB.zip node test/e2e.mjs
 
 E2E paths are currently hardcoded to the author's local fixtures - pass paths or edit the script.
 
-## How the SARC codec was validated
-
-`src/sarc.js` is a clean-room SARC reader/writer. Against a real 11,102-file game archive it round-trips losslessly (verified with an independent parser), preserves node hash order, 0x100 data alignment, and the word-addressed filename table. Filename hashing (`h = h * 0x65 + c`) and node sort order were confirmed against known entries.
-
 ## License
 
-MIT. The SARC implementation is original code written for this project from observed file layouts.
+MIT.

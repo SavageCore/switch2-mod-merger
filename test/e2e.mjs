@@ -64,6 +64,15 @@ if (flipped === firstTheme) throw new Error('theme toggle did not flip');
 await page.reload({ waitUntil: 'networkidle' });
 const kept = await page.evaluate(() => document.documentElement.dataset.theme);
 if (kept !== flipped) throw new Error('theme did not persist across reload');
+// Icon regression: svg presentation attributes must survive HTML parsing.
+const iconFill = await page.evaluate(() => {
+  const svg = [...document.querySelectorAll('#themeBtn svg')].find(
+    (x) => getComputedStyle(x).display !== 'none',
+  );
+  return getComputedStyle(svg.querySelector('path, circle')).fill;
+});
+if (iconFill !== 'none')
+  throw new Error(`theme icon fill broken, got ${iconFill}`);
 const modA = process.env.MOD_A ?? '/tmp/opencode/mkw-merge/ClassicGP.zip';
 const modB = process.env.MOD_B ?? '/tmp/opencode/mkw-merge/LightOpt.zip';
 await page.setInputFiles('#modFiles', [modA, modB]);

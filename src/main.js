@@ -429,13 +429,14 @@ async function onMerge() {
     $('manifestPre').textContent = JSON.stringify(summary, null, 2);
     $('manifestWrap').hidden = false;
     $('mergeStatus').textContent = 'Done. Import the zip with Import Mod from ZIP (right-click the game, Configure, Add-ons).';
+    $('mergeBtn').disabled = false;
   } catch (err) {
     $('errors').hidden = false;
     $('errorPre').textContent = err.message;
     $('errors').scrollIntoView();
+    updateMergeReadiness(state.analysis);
   } finally {
     $('mergeProgress').hidden = true;
-    updateMergeReadiness(state.analysis);
   }
 }
 

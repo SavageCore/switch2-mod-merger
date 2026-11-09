@@ -67,6 +67,8 @@ const outPath = '/tmp/opencode/mkw-merge/e2e-download.zip';
 await download.saveAs(outPath);
 console.log('downloaded', fs.statSync(outPath).size, 'bytes');
 console.log('manifest shown:', await page.locator('#manifestWrap').isVisible());
+const doneStatus = await page.locator('#mergeStatus').textContent();
+if (!doneStatus.startsWith('Done.')) throw new Error('post-merge status wrong: ' + doneStatus);
 const footer = await page.locator('#siteFooter').textContent();
 if (!footer.includes('SavageCore') || !/[0-9a-f]{7}/.test(footer)) {
   throw new Error('footer missing attribution/build hash: ' + footer);

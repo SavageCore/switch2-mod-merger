@@ -138,6 +138,14 @@ describe('mergedModName', () => {
     expect(mergedModName(['ClassicGP', 'SecretTracks'])).toBe('ClassicGP+SecretTracks');
   });
 
+  it('alphabetises while keeping source capitalisation exactly', () => {
+    expect(mergedModName(['SecretTracks', 'ClassicGP', 'light'])).toBe('ClassicGP+light+SecretTracks');
+  });
+
+  it('dedupes repeat names', () => {
+    expect(mergedModName(['A', 'A', 'B'])).toBe('A+B');
+  });
+
   it('strips filename-unsafe characters', () => {
     expect(mergedModName(['a/b', 'c:d*e'])).toBe('a_b+c_d_e');
   });

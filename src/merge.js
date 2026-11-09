@@ -28,12 +28,21 @@ function fnv1a(bytes) {
   return (h >>> 0).toString(16);
 }
 
-/** Folder/file-safe display name for the merged mod: ClassicGP+SecretTracks. */
+/** Folder/file-safe display name for the merged mod: ClassicGP+SecretTracks.
+ *  Source capitalization is kept exactly; names are sorted alphabetically. */
 export function mergedModName(modNames) {
   const clean = modNames
     .map((n) => n.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').trim().slice(0, 60))
     .filter((n) => n.length > 0);
-  return (clean.length > 0 ? clean : ['merged']).join('+');
+  const unique = [...new Set(clean)];
+  unique.sort((a, b) => {
+    const al = a.toLowerCase();
+    const bl = b.toLowerCase();
+    if (al < bl) return -1;
+    if (al > bl) return 1;
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+  return (unique.length > 0 ? unique : ['merged']).join('+');
 }
 
 /** Compressed SARC archives mods ship: .sarc.zs and TOTK-style .pack.zs. */

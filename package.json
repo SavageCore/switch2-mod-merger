@@ -1,7 +1,7 @@
 {
   "name": "switch2-mod-merger",
   "version": "0.1.0",
-  "description": "Client-side web app to merge Switch 2 mods that replace the same .sarc.zs archives. No uploads, everything runs in the browser.",
+  "description": "Merge Switch 2 mods that replace the same compressed archives, entirely in your browser. No uploads, no server - your files never leave your machine.",
   "type": "module",
   "scripts": {
     "dev": "vite",

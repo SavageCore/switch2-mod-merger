@@ -85,6 +85,17 @@ await page.click('#restartBtn');
 await page.locator('#pageMods:not([hidden])').waitFor({ timeout: 10000 });
 if ((await page.locator('#modList li').count()) !== 0) throw new Error('restart did not clear mods');
 
+// Multi-variant zip: choice required before Next.
+const perfZip = process.env.MOD_VARIANT ?? '/home/savagecore/Modding/MKW/mkw_performance_mod_v1.zip';
+const helperZip = process.env.MOD_A ?? '/tmp/opencode/mkw-merge/ClassicGP.zip';
+await page.setInputFiles('#modFiles', [perfZip, helperZip]);
+await page.locator('#modList li').first().waitFor({ timeout: 30000 });
+const variantLabels = await page.locator('#pageMods input[type="radio"]').allTextContents();
+if (variantLabels.length < 2) throw new Error('variant choice missing: ' + JSON.stringify(variantLabels));
+if (await page.locator('#nextBtn').isEnabled()) throw new Error('Next should wait for a variant choice');
+await page.locator('#pageMods input[type="radio"]').first().check();
+await page.locator('#nextBtn:enabled').waitFor({ timeout: 10000 });
+
 await browser.close();
 server.close();
 if (errors.length > 0) {

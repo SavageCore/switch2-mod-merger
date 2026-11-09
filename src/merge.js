@@ -59,17 +59,36 @@ export function normalizeEntryPath(fullPath) {
   return { kind: parts[idx], rel: parts.slice(idx + 1).join('/') };
 }
 
-export async function readModZip(name, arrayBuffer) {
+function topFolders(zip, onlyTop = null) {
+  const tops = [];
+  zip.forEach((relativePath, entry) => {
+    if (entry.dir) return;
+    const rawParts = relativePath.split('/').filter((p) => p !== '');
+    if (rawParts.includes('__MACOSX') || rawParts[rawParts.length - 1] === '.DS_Store' || rawParts.length < 2) return;
+    if (onlyTop !== null && rawParts[0] !== onlyTop) return;
+    if (!tops.includes(rawParts[0])) tops.push(rawParts[0]);
+  });
+  return tops;
+}
+
+/**
+ * Variant folders inside one zip: top-level folders holding mod content, in
+ * zip order (e.g. a zip with Light Optimizations/ and Strong Optimizations/).
+ * Single-wrapper and root-level romfs/ zips yield 0 or 1 entries.
+ */
+export async function detectVariants(arrayBuffer) {
+  const zip = await JSZip.loadAsync(arrayBuffer);
+  return topFolders(zip).filter((t) => !NON_WRAPPER_TOPS.has(t.toLowerCase()));
+}
+
+export async function readModZip(name, arrayBuffer, onlyTop = null) {
   const zip = await JSZip.loadAsync(arrayBuffer);
   const entries = [];
-  const tops = new Set();
   const jobs = [];
   zip.forEach((relativePath, entry) => {
     if (entry.dir) return;
     const rawParts = relativePath.split('/').filter((p) => p !== '');
-    if (!rawParts.includes('__MACOSX') && rawParts[rawParts.length - 1] !== '.DS_Store' && rawParts.length >= 2) {
-      tops.add(rawParts[0]);
-    }
+    if (onlyTop !== null && rawParts[0] !== onlyTop) return;
     const norm = normalizeEntryPath(relativePath);
     if (!norm) return;
     jobs.push(
@@ -79,6 +98,8 @@ export async function readModZip(name, arrayBuffer) {
     );
   });
   await Promise.all(jobs);
+  const tops = new Set();
+  for (const t of topFolders(zip, onlyTop)) tops.add(t);
   return { name: displayName(name, tops), entries };
 }
 
@@ -123,7 +144,7 @@ function checkVersionGate(mods) {
  * whether their contents actually differ. Reads only the archive entries
  * (no decompression), so it runs right after upload to tell the user which
  * vanilla files to supply for auto-merge.
- * @param {Array<{name: string, arrayBuffer: ArrayBuffer}>} modZips
+ * @param {Array<{name: string, arrayBuffer: ArrayBuffer, variant?: string|null}>} modZips
  * @returns {Promise<Array<{rel: string, filename: string, mods: string[], differing: boolean}>>}
  */
 export async function scanSharedArchives(modZips) {
@@ -133,6 +154,11 @@ export async function scanSharedArchives(modZips) {
     const found = new Map();
     const jobs = [];
     zip.forEach((relativePath, entry) => {
+      if (entry.dir) return;
+      if (z.variant) {
+        const top = relativePath.split('/').filter((p) => p !== '')[0];
+        if (top !== z.variant) return;
+      }
       if (entry.dir) return;
       const norm = normalizeEntryPath(relativePath);
       if (!norm || norm.kind !== 'romfs' || !isGameArchive(norm.rel)) return;
@@ -161,12 +187,12 @@ export async function scanSharedArchives(modZips) {
 
 /**
  * Analyze uploaded mods and compute everything the UI needs.
- * @param {Array<{name: string, arrayBuffer: ArrayBuffer}>} modZips
+ * @param {Array<{name: string, arrayBuffer: ArrayBuffer, variant?: string|null}>} modZips
  * @param {Map<string, Uint8Array>|null} vanillaArches filename -> raw (.sarc or .sarc.zs) bytes
  */
 export async function analyzeMods(modZips, vanillaArches = null) {
   const mods = [];
-  for (const z of modZips) mods.push(await readModZip(z.name, z.arrayBuffer));
+  for (const z of modZips) mods.push(await readModZip(z.name, z.arrayBuffer, z.variant ?? null));
   checkVersionGate(mods);
 
   // Decompress + parse every .sarc.zs up front.

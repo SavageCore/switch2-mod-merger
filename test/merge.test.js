@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 import { buildSarc, parseSarc } from '../src/sarc.js';
 import { zstdCompress, zstdDecompress } from '../src/zstd.js';
-import { analyzeMods, buildMerged, scanSharedArchives, mergedModName } from '../src/merge.js';
+import { analyzeMods, buildMerged, scanSharedArchives, mergedModName, detectVariants } from '../src/merge.js';
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -169,6 +169,43 @@ describe('mergedModName', () => {
     const out = await JSZip.loadAsync(zipBytes);
     expect(out.file('A+B/romfs/x.txt')).not.toBeNull();
     expect(out.file('A+B/switch2-mod-merger-manifest.json')).toBeNull();
+  });
+});
+
+describe('mod variants', () => {
+  async function variantZip() {
+    const zip = new JSZip();
+    zip.file('Light/romfs/System/Test/data.sarc.zs', await sarcZs([['Gyml/X/a.bgyml', 'light']]));
+    zip.file('Strong/romfs/System/Test/data.sarc.zs', await sarcZs([['Gyml/X/a.bgyml', 'strong']]));
+    return { name: 'perf.zip', arrayBuffer: await zip.generateAsync({ type: 'arraybuffer' }) };
+  }
+
+  it('detects variant folders in zip order', async () => {
+    expect(await detectVariants((await variantZip()).arrayBuffer)).toEqual(['Light', 'Strong']);
+  });
+
+  it('merges only the chosen variant', async () => {
+    for (const [choice, want] of [
+      ['Light', 'light'],
+      ['Strong', 'strong'],
+    ]) {
+      const v = await variantZip();
+      const analysis = await analyzeMods([{ ...v, variant: choice }]);
+      expect(analysis.mods).toEqual([choice]);
+      const { zipBytes } = await buildMerged(analysis, { picks: new Map() });
+      const out = await JSZip.loadAsync(zipBytes);
+      const zs = await out.file(`${choice}/romfs/System/Test/data.sarc.zs`).async('uint8array');
+      const { files } = parseSarc(await zstdDecompress(zs));
+      expect(dec.decode(files[0].data)).toBe(want);
+    }
+  });
+
+  it('scan respects the chosen variant', async () => {
+    const v = await variantZip();
+    const a = await modZip('A', { sarcEntries: [['Gyml/X/a.bgyml', 'strong']], sarcPath: 'System/Test/data.sarc.zs' });
+    const shared = await scanSharedArchives([{ ...v, variant: 'Strong' }, a]);
+    expect(shared).toHaveLength(1);
+    expect(shared[0].differing).toBe(false);
   });
 });
 

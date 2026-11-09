@@ -1,4 +1,4 @@
-import { analyzeMods, buildMerged, scanSharedArchives, mergedModName } from './merge.js';
+import { analyzeMods, buildMerged, scanSharedArchives, mergedModName, detectVariants } from './merge.js';
 
 const state = {
   mods: [], // { name, arrayBuffer }
@@ -27,7 +27,8 @@ function refreshModList() {
   state.mods.forEach((m, i) => {
     const li = document.createElement('li');
     const size = (m.arrayBuffer.byteLength / 1048576).toFixed(1);
-    li.innerHTML = `<span><strong>${escapeHtml(m.name)}</strong> <span class="filetoggle">${size} MB</span></span>`;
+    const label = m.variants.length >= 2 && m.variant ? `${m.name} (${m.variant})` : m.name;
+    li.innerHTML = `<span><strong>${escapeHtml(label)}</strong> <span class="filetoggle">${size} MB</span></span>`;
     const btn = document.createElement('button');
     btn.textContent = 'Remove';
     btn.className = 'secondary';
@@ -39,8 +40,42 @@ function refreshModList() {
     };
     li.appendChild(btn);
     ul.appendChild(li);
+    if (m.variants.length >= 2) {
+      const wrap = document.createElement('div');
+      wrap.className = 'pick';
+      const title = document.createElement('span');
+      title.innerHTML = `Which version of <strong>${escapeHtml(m.name)}</strong>? `;
+      wrap.appendChild(title);
+      m.variants.forEach((v) => {
+        const radio = document.createElement('label');
+        radio.className = 'pick';
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = `variant-${i}`;
+        input.checked = m.variant === v;
+        input.onchange = () => {
+          m.variant = v;
+          resetResults();
+          refreshModList();
+          refreshSharedBox();
+        };
+        radio.appendChild(input);
+        radio.appendChild(document.createTextNode(v));
+        wrap.appendChild(radio);
+      });
+      if (!m.variant) {
+        const warn = document.createElement('span');
+        warn.className = 'pill warn';
+        warn.textContent = 'choose one';
+        wrap.appendChild(warn);
+      }
+      ul.appendChild(wrap);
+    }
   });
-  $('nextBtn').disabled = state.mods.length < 2;
+  const needChoice = state.mods.filter((m) => m.variants.length >= 2 && !m.variant);
+  $('nextBtn').disabled = state.mods.length < 2 || needChoice.length > 0;
+  $('modsHint').textContent =
+    needChoice.length > 0 ? `Choose a version for: ${needChoice.map((m) => m.name).join(', ')}` : '';
 }
 
 function refreshVanillaList() {
@@ -90,7 +125,9 @@ async function refreshSharedBox() {
     return;
   }
   try {
-    state.shared = await scanSharedArchives(state.mods.map((m) => ({ name: m.name, arrayBuffer: m.arrayBuffer })));
+    state.shared = await scanSharedArchives(
+      state.mods.map((m) => ({ name: m.name, arrayBuffer: m.arrayBuffer, variant: m.variant ?? null })),
+    );
   } catch (err) {
     if (run !== sharedRun) return;
     box.innerHTML = `<div class="card"><p class="filetoggle">Could not scan mod zips (${escapeHtml(err.message)}). Analyze will report problems.</p></div>`;
@@ -160,7 +197,14 @@ function resetAll() {
 async function addModFiles(fileList) {
   for (const f of fileList) {
     if (!/\.zip$/i.test(f.name)) continue;
-    state.mods.push({ name: shortName(f.name), arrayBuffer: await f.arrayBuffer() });
+    const arrayBuffer = await f.arrayBuffer();
+    let variants = [];
+    try {
+      variants = await detectVariants(arrayBuffer);
+    } catch {
+      variants = [];
+    }
+    state.mods.push({ name: shortName(f.name), arrayBuffer, variants, variant: null });
   }
   resetResults();
   refreshModList();
@@ -391,7 +435,7 @@ async function onAnalyze() {
   $('analyzeBtn').disabled = true;
   $('analyzeStatus').textContent = 'Analyzing…';
   try {
-    const modZips = state.mods.map((m) => ({ name: m.name, arrayBuffer: m.arrayBuffer.slice(0) }));
+    const modZips = state.mods.map((m) => ({ name: m.name, arrayBuffer: m.arrayBuffer.slice(0), variant: m.variant ?? null }));
     state.analysis = await analyzeMods(modZips, state.vanilla.size > 0 ? state.vanilla : null);
     renderAnalysis(state.analysis);
     $('analyzeStatus').textContent = '';

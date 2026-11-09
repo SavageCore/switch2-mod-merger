@@ -158,20 +158,14 @@ const fakeVanilla = '/tmp/opencode/fake-vanilla.sarc.zs';
 fs.writeFileSync(fakeVanilla, Buffer.alloc(64, 7));
 await page.setInputFiles('#vanillaFiles', [fakeVanilla]);
 await page.locator('#vanillaList li').first().waitFor({ timeout: 30000 });
-const freshRow = await page.locator('#vanillaList').textContent();
-if (freshRow.includes('remembered'))
-  throw new Error('fresh upload wrongly tagged remembered');
 await page.reload({ waitUntil: 'networkidle' });
 await page
   .locator('#vanillaList li')
   .first()
   .waitFor({ state: 'attached', timeout: 30000 });
 const restoredRow = await page.locator('#vanillaList').textContent();
-if (
-  !restoredRow.includes('fake-vanilla') ||
-  !restoredRow.includes('remembered')
-)
-  throw new Error(`remembered vanilla missing after reload: ${restoredRow}`);
+if (!restoredRow.includes('fake-vanilla'))
+  throw new Error(`stored vanilla missing after reload: ${restoredRow}`);
 
 await browser.close();
 server.close();

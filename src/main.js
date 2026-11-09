@@ -14,7 +14,6 @@ import {
 const state = {
   mods: [], // { name, arrayBuffer }
   vanilla: new Map(), // filename -> Uint8Array
-  remembered: new Set(), // vanilla filenames restored from storage
   shared: null, // scanSharedArchives() result
   analysis: null,
   picks: new Map(), // resolution key -> modIdx
@@ -112,18 +111,10 @@ function refreshVanillaList() {
     const text = document.createElement('span');
     text.title = name;
     text.innerHTML = `<strong>${escapeHtml(name)}</strong> <span class="filetoggle">${size}</span>`;
-    if (state.remembered.has(name)) {
-      const tag = document.createElement('span');
-      tag.className = 'filetoggle';
-      tag.textContent = 'remembered';
-      text.appendChild(document.createTextNode(' '));
-      text.appendChild(tag);
-    }
     li.appendChild(text);
     li.appendChild(
       trashButton(`Remove ${name}`, () => {
         state.vanilla.delete(name);
-        state.remembered.delete(name);
         deleteVanillaFile(name);
         resetResults();
         refreshVanillaList();
@@ -293,7 +284,6 @@ async function addVanillaFiles(fileList) {
     if (!/\.(sarc|zs)$/i.test(f.name)) continue;
     const bytes = new Uint8Array(await f.arrayBuffer());
     state.vanilla.set(f.name, bytes);
-    state.remembered.delete(f.name);
     await saveVanillaFile(f.name, bytes);
   }
   resetResults();
@@ -580,7 +570,6 @@ async function onAnalyze() {
     if (state.analysis.vanillaFailed.length > 0) {
       for (const f of state.analysis.vanillaFailed) {
         state.vanilla.delete(f.filename);
-        state.remembered.delete(f.filename);
         await deleteVanillaFile(f.filename);
       }
       refreshVanillaList();
@@ -662,10 +651,9 @@ async function init() {
     const stored = await loadVanillaStore();
     for (const [name, bytes] of stored) {
       state.vanilla.set(name, bytes);
-      state.remembered.add(name);
     }
   } catch {
-    // Start without remembered files.
+    // Start without stored files.
   }
   $('themeBtn').addEventListener('click', () => {
     const next =

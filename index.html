@@ -25,15 +25,15 @@
         </div>
         <ul id="modList" class="filelist"></ul>
 
-        <h2>2. Vanilla archives <span class="optional">(optional, enables auto-merge)</span></h2>
+        <h2>2. Vanilla archives <span id="vanillaStatus" class="optional"></span></h2>
         <p class="hint">
-          If two mods change the <em>same</em> file, the merger needs the unmodded archive to tell whose change is whose.
-          Extract e.g. <code>general_format.Product_180.sarc.zs</code> from your game dump and add it here
-          (a plain <code>.sarc</code> / <code>.pack</code> also works). Without it, you pick a winner per file group below.
+          The merger builds one mod.zip from your mods. Files changed by only one mod merge on their own.
+          Files changed by several mods need the <em>vanilla (unmodded)</em> copy to merge automatically -
+          otherwise you pick a winner per group in step 3.
         </p>
+        <div id="sharedBox"></div>
         <p><label class="filelink">Choose vanilla files<input id="vanillaFiles" type="file" accept=".sarc.zs,.sarc,.pack.zs,.pack,.zs" multiple hidden /></label></p>
         <ul id="vanillaList" class="filelist"></ul>
-        <div id="sharedBox"></div>
 
         <p><button id="analyzeBtn" disabled>Analyze mods</button> <span id="analyzeStatus" class="status"></span></p>
       </section>

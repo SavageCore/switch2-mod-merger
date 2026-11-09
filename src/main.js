@@ -73,7 +73,9 @@ function vanillaFor(filename) {
 
 async function refreshSharedBox() {
   const box = $('sharedBox');
+  const status = $('vanillaStatus');
   box.innerHTML = '';
+  status.textContent = '';
   if (state.mods.length < 2) {
     state.shared = null;
     return;
@@ -86,18 +88,24 @@ async function refreshSharedBox() {
     return;
   }
   if (state.shared.length === 0) {
-    box.innerHTML = '<div class="card"><p class="filetoggle">No archive is replaced by more than one mod - everything merges cleanly.</p></div>';
+    box.innerHTML = '<div class="card"><p class="filetoggle">No archive is replaced by more than one mod - everything merges on its own.</p></div>';
     return;
   }
   const card = document.createElement('div');
   card.className = 'card';
   const needVanilla = state.shared.filter((s) => s.differing && !vanillaFor(s.filename));
   const ready = state.shared.filter((s) => s.differing && vanillaFor(s.filename));
+  status.textContent =
+    needVanilla.length > 0
+      ? `- ${needVanilla.length} shared file${needVanilla.length > 1 ? 's need' : ' needs'} vanilla`
+      : ready.length > 0
+        ? '- vanilla ready'
+        : '';
   let html = '<h3>Shared archives</h3>';
   if (needVanilla.length > 0) {
-    html += `<p>Add the <em>vanilla (unmodded)</em> copy of each file below - taken from your game dump, same filename - and shared files auto-merge. Without it, you pick a winner per group in step 3.</p>`;
+    html += `<p>Add the vanilla copy of each file below (from your game dump, same filename).</p>`;
   } else if (ready.length > 0) {
-    html += '<p>Vanilla files present - shared files will auto-merge.</p>';
+    html += '<p>Vanilla files present - shared files merge automatically.</p>';
   }
   card.innerHTML = html;
   for (const s of state.shared) {

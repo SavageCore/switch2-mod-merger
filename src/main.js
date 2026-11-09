@@ -21,14 +21,21 @@ function shortName(filename) {
   return filename.replace(/\.zip$/i, '');
 }
 
+function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
+  return `${(bytes / 1073741824).toFixed(1)} GB`;
+}
+
 function refreshModList() {
   const ul = $('modList');
   ul.innerHTML = '';
   state.mods.forEach((m, i) => {
     const li = document.createElement('li');
-    const size = (m.arrayBuffer.byteLength / 1048576).toFixed(1);
+    const size = formatSize(m.arrayBuffer.byteLength);
     const label = m.variants.length >= 2 && m.variant ? `${m.name} (${m.variant})` : m.name;
-    li.innerHTML = `<span><strong>${escapeHtml(label)}</strong> <span class="filetoggle">${size} MB</span></span>`;
+    li.innerHTML = `<span><strong>${escapeHtml(label)}</strong> <span class="filetoggle">${size}</span></span>`;
     const btn = document.createElement('button');
     btn.textContent = 'Remove';
     btn.className = 'secondary';
@@ -83,8 +90,8 @@ function refreshVanillaList() {
   ul.innerHTML = '';
   for (const [name, bytes] of state.vanilla) {
     const li = document.createElement('li');
-    const size = (bytes.length / 1048576).toFixed(1);
-    li.innerHTML = `<span><strong>${escapeHtml(name)}</strong> <span class="filetoggle">${size} MB</span></span>`;
+    const size = formatSize(bytes.length);
+    li.innerHTML = `<span><strong>${escapeHtml(name)}</strong> <span class="filetoggle">${size}</span></span>`;
     const btn = document.createElement('button');
     btn.textContent = 'Remove';
     btn.className = 'secondary';

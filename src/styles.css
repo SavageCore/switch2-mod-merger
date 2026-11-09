@@ -211,6 +211,9 @@ button.secondary.match {
   margin: 0 0 0.4rem;
   font-size: 1rem;
 }
+.card.warn {
+  border-color: var(--warn);
+}
 .card h4 {
   margin: 0.8rem 0 0.3rem;
   font-size: 0.92rem;

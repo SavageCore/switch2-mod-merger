@@ -292,15 +292,24 @@ export async function analyzeMods(modZips, vanillaArches = null) {
   }
   if (errors.length > 0) throw new Error(errors.join('\n'));
 
-  // Parse vanilla archives (optional): filename -> Map(inner -> data)
+  // Parse vanilla archives (optional): filename -> Map(inner -> data).
+  // Files that fail to parse are reported, not fatal: the caller drops them
+  // and asks the user to supply them again.
   const vanilla = new Map();
+  const vanillaFailed = [];
   if (vanillaArches) {
     for (const [filename, bytes] of vanillaArches) {
-      const raw = isZstd(bytes) ? await zstdDecompress(bytes) : bytes;
-      if (!isSarc(raw))
-        throw new Error(`Vanilla file ${filename} is not a SARC archive`);
-      const { files } = parseSarc(raw);
-      vanilla.set(filename, new Map(files.map((f) => [f.name, f.data])));
+      try {
+        const raw = isZstd(bytes) ? await zstdDecompress(bytes) : bytes;
+        if (!isSarc(raw)) throw new Error('not a SARC archive');
+        const { files } = parseSarc(raw);
+        vanilla.set(filename, new Map(files.map((f) => [f.name, f.data])));
+      } catch (err) {
+        vanillaFailed.push({
+          filename,
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
     }
   }
 
@@ -428,6 +437,7 @@ export async function analyzeMods(modZips, vanillaArches = null) {
     looseUnique,
     looseConflicts,
     exefs,
+    vanillaFailed,
     _internal: { sarcMaps, looseMaps, mods },
   };
 }

@@ -13,7 +13,7 @@ This tool:
 1. Reads two or more mod `.zip` files (standard `romfs/` + `exefs/` layout).
 2. Decompresses each shared archive and diffs the inner files (11,000-file archives take ~200 ms).
 3. Auto-merges everything that doesn't overlap. Files changed by only one side are taken from that side.
-4. For files changed by **both** mods, you pick a winner per folder group - or drop in the vanilla (unmodded) archive to auto-resolve those too. As soon as you add your mods, the app names the exact shared files (e.g. `general_format.Product_180.sarc.zs`) and tells you which vanilla copies to supply.
+4. For files changed by **both** mods, you pick a winner per folder group - or drop in the vanilla (unmodded) archive to auto-resolve those too. Vanilla files are remembered between visits. As soon as you add your mods, the app names the exact shared files (e.g. `general_format.Product_180.sarc.zs`) and tells you which vanilla copies to supply.
 5. Concatenates `exefs` `.pchtxt` patches (overlapping patches to the same address are reported, not silently merged), passes `.ips` and everything else through.
 6. Rebuilds the archives, recompresses them, and gives you one install-ready mod `.zip` plus a manifest of where every file came from.
 

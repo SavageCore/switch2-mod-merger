@@ -173,6 +173,18 @@ describe('analyze + merge', () => {
     await expect(analyzeMods([a, b])).rejects.toThrow(/version mismatch/i);
   });
 
+  it('reports unusable vanilla files instead of failing', async () => {
+    const a = await modZip('A', { sarcEntries: [['Gyml/X/a.bgyml', '1']] });
+    const b = await modZip('B', { sarcEntries: [['Gyml/X/a.bgyml', '2']] });
+    const analysis = await analyzeMods(
+      [a, b],
+      new Map([['junk.sarc.zs', new Uint8Array([1, 2, 3])]]),
+    );
+    expect(analysis.vanillaFailed).toHaveLength(1);
+    expect(analysis.vanillaFailed[0].filename).toBe('junk.sarc.zs');
+    expect(analysis.archives).toHaveLength(1);
+  });
+
   it('throws when a pick is missing', async () => {
     const a = await modZip('A', { sarcEntries: [['Gyml/X/a.bgyml', '1']] });
     const b = await modZip('B', { sarcEntries: [['Gyml/X/a.bgyml', '2']] });

@@ -391,10 +391,11 @@ function renderAnalysis(analysis) {
     let blocking = false;
     analysis.exefs.forEach((e) => {
       const p = document.createElement('p');
-      if (e.kind === 'pchtxt' && e.conflicts.length === 0) {
+      if ((e.kind === 'pchtxt' || e.kind === 'ips') && e.conflicts.length === 0) {
+        const verb = e.kind === 'pchtxt' ? 'concatenated' : 'merged';
         p.innerHTML =
           e.mods.length > 1
-            ? `<code>${escapeHtml(e.rel)}</code> <span class="pill good">concatenated (${e.mods.map(escapeHtml).join(' + ')})</span>`
+            ? `<code>${escapeHtml(e.rel)}</code> <span class="pill good">${verb} (${e.mods.map(escapeHtml).join(' + ')})</span>`
             : `<code>${escapeHtml(e.rel)}</code> <span class="pill good">only in ${escapeHtml(e.mods[0])}</span>`;
       } else if (e.conflicts.length > 0) {
         blocking = true;

@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import { parseSarc, buildSarc, groupByDirectory, bytesEqual } from './sarc.js';
 import { zstdDecompress, zstdCompress } from './zstd.js';
 import { parsePchtxt, findPchtxtConflicts, mergePchtxt, gameVersionHints } from './exefs.js';
+import { parseIps, mergeIpsRecords } from './ips.js';
 
 const ZSTD_MAGIC = 0xfd2fb528;
 
@@ -116,6 +117,12 @@ export function displayName(zipName, tops) {
   return zipName;
 }
 
+// exefs patch files (.pchtxt/.ips) are resolved in the exefs card, never by
+// per-file picks, so they stay out of looseConflicts.
+function isManagedExefs(rel) {
+  return rel.startsWith('exefs/') && (rel.toLowerCase().endsWith('.pchtxt') || rel.toLowerCase().endsWith('.ips'));
+}
+
 function checkVersionGate(mods) {
   const versionsByMod = new Map();
   for (const mod of mods) {
@@ -200,6 +207,7 @@ export async function analyzeMods(modZips, vanillaArches = null) {
   const sarcMaps = mods.map(() => new Map());
   const looseMaps = mods.map(() => new Map()); // Map 'kind/rel' -> data
   const exefsPatches = []; // { mod, rel, patches }
+  const exefsIps = []; // { mod, rel, records }
   const errors = [];
 
   for (let i = 0; i < mods.length; i++) {
@@ -219,6 +227,9 @@ export async function analyzeMods(modZips, vanillaArches = null) {
           looseMaps[i].set(`${e.kind}/${e.rel}`, e.data);
           if (e.kind === 'exefs' && e.rel.toLowerCase().endsWith('.pchtxt')) {
             exefsPatches.push({ mod: mods[i].name, rel: e.rel, patches: parsePchtxt(new TextDecoder().decode(e.data)) });
+          }
+          if (e.kind === 'exefs' && e.rel.toLowerCase().endsWith('.ips')) {
+            exefsIps.push({ mod: mods[i].name, rel: e.rel, records: parseIps(e.data).records });
           }
         }
       } catch (err) {
@@ -302,11 +313,12 @@ export async function analyzeMods(modZips, vanillaArches = null) {
     }
     const first = looseMaps[holders[0]].get(rel);
     if (holders.every((i) => bytesEqual(looseMaps[i].get(rel), first))) looseIdentical.push(rel);
-    else looseConflicts.push({ rel, variants: holders, auto: null });
+    else if (!isManagedExefs(rel)) looseConflicts.push({ rel, variants: holders, auto: null });
   }
 
-  // exefs .ips / other binaries that differ are hard conflicts (never auto-merged).
+  // exefs .ips files merge at record level after overlap checking.
   // .pchtxt files merge by concatenation after overlap checking.
+  // Any other differing exefs binary is a hard conflict.
   const pchtxtRels = [...new Set(exefsPatches.map((p) => p.rel))].sort();
   const exefs = [];
   for (const rel of pchtxtRels) {
@@ -314,7 +326,15 @@ export async function analyzeMods(modZips, vanillaArches = null) {
     const conflicts = findPchtxtConflicts(perMod);
     exefs.push({ rel, kind: 'pchtxt', mods: perMod.map((p) => p.mod), conflicts });
   }
-  for (const c of looseConflicts.filter((l) => l.rel.startsWith('exefs/') && !l.rel.toLowerCase().endsWith('.pchtxt'))) {
+  const ipsRels = [...new Set(exefsIps.map((p) => p.rel))].sort();
+  for (const rel of ipsRels) {
+    const perMod = exefsIps.filter((p) => p.rel === rel);
+    const { conflicts } = mergeIpsRecords(perMod);
+    exefs.push({ rel, kind: 'ips', mods: perMod.map((p) => p.mod), conflicts });
+  }
+  for (const c of looseConflicts.filter(
+    (l) => l.rel.startsWith('exefs/') && !l.rel.toLowerCase().endsWith('.pchtxt') && !l.rel.toLowerCase().endsWith('.ips'),
+  )) {
     exefs.push({ rel: c.rel.slice('exefs/'.length), kind: 'binary', mods: c.variants.map((i) => mods[i].name), conflicts: [{ address: null }] });
   }
 
@@ -437,6 +457,14 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
         const named = holders.map((j) => ({ mod: mods[j].name, text: new TextDecoder().decode(looseMaps[j].get(rel)) }));
         folder.file(restPath, mergePchtxt(named));
         manifest.exefs[restPath] = { action: 'concatenated-pchtxt', from: named.map((n) => n.mod) };
+      } else if (kind === 'exefs' && restPath.toLowerCase().endsWith('.ips')) {
+        const perMod = holders.map((j) => ({ mod: mods[j].name, records: parseIps(looseMaps[j].get(rel)).records }));
+        const { merged, conflicts } = mergeIpsRecords(perMod);
+        if (conflicts.length > 0) {
+          throw new Error(`Overlapping IPS patches in ${restPath}: ${conflicts.map((c) => `0x${c.address.toString(16).toUpperCase()}`).join(', ')}`);
+        }
+        folder.file(restPath, merged, { binary: true });
+        manifest.exefs[restPath] = { action: 'merged-ips', from: perMod.map((p) => p.mod) };
       } else {
         const key = `loose:${rel}`;
         if (!picks.has(key)) throw new Error(`No resolution for ${rel}`);

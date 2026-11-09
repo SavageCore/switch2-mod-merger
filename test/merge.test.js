@@ -4,8 +4,14 @@ import { buildSarc, parseSarc } from '../src/sarc.js';
 import { zstdCompress, zstdDecompress } from '../src/zstd.js';
 import { analyzeMods, buildMerged, scanSharedArchives, mergedModName, detectVariants } from '../src/merge.js';
 
+import { emitIps32 } from '../src/ips.js';
+
 const enc = new TextEncoder();
 const dec = new TextDecoder();
+
+function testIps(records) {
+  return emitIps32(records.map(([offset, bytes]) => ({ offset, bytes: new Uint8Array(bytes) })));
+}
 
 async function sarcZs(entries) {
   const raw = buildSarc(entries.map(([name, text]) => ({ name, data: enc.encode(text) })));
@@ -117,6 +123,20 @@ describe('analyze + merge', () => {
     const b = await modZip('B', { sarcEntries: [['Gyml/X/a.bgyml', '2']] });
     const analysis = await analyzeMods([a, b]);
     await expect(buildMerged(analysis, { picks: new Map() })).rejects.toThrow(/No resolution/);
+  });
+
+  it('keeps managed exefs out of loose conflicts', async () => {
+    const ipsA = testIps([[0x100, [1, 2, 3, 4]]]);
+    const ipsB = testIps([[0x200, [5, 6]]]);
+    const a = await modZip('A', { exefs: { 'BID.pchtxt': '@enabled\n0001 AAAA\n', 'BID.ips': ipsA } });
+    const b = await modZip('B', { exefs: { 'BID.pchtxt': '@enabled\n0002 BBBB\n', 'BID.ips': ipsB } });
+    const analysis = await analyzeMods([a, b]);
+    expect(analysis.looseConflicts).toHaveLength(0);
+    expect(analysis.exefs.map((e) => e.kind).sort()).toEqual(['ips', 'pchtxt']);
+    const { zipBytes } = await buildMerged(analysis, { picks: new Map() });
+    const out = await JSZip.loadAsync(zipBytes);
+    expect(out.file('A+B/exefs/BID.pchtxt')).not.toBeNull();
+    expect(out.file('A+B/exefs/BID.ips')).not.toBeNull();
   });
 });
 

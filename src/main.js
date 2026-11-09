@@ -118,9 +118,7 @@ async function refreshSharedBox() {
       const v = vanillaFor(s.filename);
       p.innerHTML =
         `<code>${escapeHtml(s.filename)}</code> ` +
-        (v
-          ? `<span class="pill good">vanilla added (${escapeHtml(v)})</span>`
-          : '<span class="pill warn">add the vanilla file to auto-merge</span>') +
+        (v ? `<span class="pill good">vanilla added (${escapeHtml(v)})</span>` : '') +
         `<br><span class="filetoggle">replaced by ${s.mods.map(escapeHtml).join(', ')}</span>`;
     }
     card.appendChild(p);

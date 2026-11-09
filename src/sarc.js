@@ -65,14 +65,18 @@ export function parseSarc(bytes) {
   const dataOffset = view.getUint32(12, le);
   const version = view.getUint16(16, le);
   if (headerLength < 0x14) throw new Error('Bad SARC header length');
-  if (fileSize !== bytes.length) throw new Error(`SARC size mismatch: header says ${fileSize}, got ${bytes.length}`);
+  if (fileSize !== bytes.length)
+    throw new Error(
+      `SARC size mismatch: header says ${fileSize}, got ${bytes.length}`,
+    );
 
   let pos = headerLength;
   if (view.getUint32(pos, le) !== SFAT_MAGIC) throw new Error('Bad SFAT magic');
   const sfatLength = view.getUint16(pos + 4, le);
   const fileCount = view.getUint16(pos + 6, le);
   const hashKey = view.getUint32(pos + 8, le);
-  if (hashKey !== HASH_KEY) throw new Error(`Unsupported SARC hash key ${hashKey}`);
+  if (hashKey !== HASH_KEY)
+    throw new Error(`Unsupported SARC hash key ${hashKey}`);
   pos += sfatLength;
 
   const nodes = [];
@@ -81,7 +85,13 @@ export function parseSarc(bytes) {
     const nameField = view.getUint32(pos + 4, le);
     const start = view.getUint32(pos + 8, le);
     const end = view.getUint32(pos + 12, le);
-    nodes.push({ hash, flags: nameField >>> 24, nameOffset: (nameField & 0xffffff) * 4, start, end });
+    nodes.push({
+      hash,
+      flags: nameField >>> 24,
+      nameOffset: (nameField & 0xffffff) * 4,
+      start,
+      end,
+    });
     pos += 0x10;
   }
 
@@ -93,12 +103,14 @@ export function parseSarc(bytes) {
     const abs = stringTable + offset;
     let end = abs;
     while (end < bytes.length && bytes[end] !== 0) end++;
-    if (end >= bytes.length) throw new Error('Filename runs past end of archive');
+    if (end >= bytes.length)
+      throw new Error('Filename runs past end of archive');
     return decodeAscii(bytes, abs, end);
   };
 
   const files = nodes.map((node) => {
-    if (dataOffset + node.end > bytes.length) throw new Error('File data runs past end of archive');
+    if (dataOffset + node.end > bytes.length)
+      throw new Error('File data runs past end of archive');
     const name = readName(node.nameOffset);
     if (filenameHash(name) !== node.hash) {
       throw new Error(`Filename hash mismatch for "${name}"`);
@@ -155,7 +167,8 @@ export function buildSarc(inputFiles, options = {}) {
   const sfatLength = 0x0c;
   const sfntLength = 0x08;
   const nodesSize = fileCount * 0x10;
-  const dataOffset = headerLength + sfatLength + nodesSize + sfntLength + tableSize;
+  const dataOffset =
+    headerLength + sfatLength + nodesSize + sfntLength + tableSize;
 
   let dataSize = 0;
   const dataStarts = [];

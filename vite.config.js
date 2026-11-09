@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite';
 import { execSync } from 'node:child_process';
+import { defineConfig } from 'vite';
 
 function gitHash(args) {
   try {

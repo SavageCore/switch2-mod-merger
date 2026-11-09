@@ -24,7 +24,7 @@ It refuses to merge mods built for different game versions (detected from patch 
 - ✅ Any number of mods sharing `.sarc.zs` archives
 - ✅ Same-file conflicts resolved by group pick or vanilla-assisted 3-way merge
 - ✅ `.pchtxt` concatenation with overlap detection, `.ips` passthrough
-- ❌ Two mods editing *different settings inside the same inner file* (e.g. two GYML tweaks in one `.bgyml`) - reported as a conflict
+- ❌ Two mods editing _different settings inside the same inner file_ (e.g. two GYML tweaks in one `.bgyml`) - reported as a conflict
 
 ## Install a merged mod
 
@@ -36,8 +36,9 @@ Afterwards, disable the source mods so they don't shadow the merged copy.
 ## Development
 
 ```sh
-pnpm install
+pnpm install      # also installs the lefthook commit hooks
 pnpm test        # unit tests (synthetic fixtures only, no game files)
+pnpm lint        # Biome check (also runs on every commit)
 pnpm dev         # local dev server
 pnpm build       # production build to dist/
 ```

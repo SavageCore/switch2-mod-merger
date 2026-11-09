@@ -15,11 +15,25 @@ export function parseIps(bytes) {
   let magic;
   let offsetWidth;
   let eof;
-  if (data.length >= 5 && data[0] === 0x50 && data[1] === 0x41 && data[2] === 0x54 && data[3] === 0x43 && data[4] === 0x48) {
+  if (
+    data.length >= 5 &&
+    data[0] === 0x50 &&
+    data[1] === 0x41 &&
+    data[2] === 0x54 &&
+    data[3] === 0x43 &&
+    data[4] === 0x48
+  ) {
     magic = 'PATCH';
     offsetWidth = 3;
     eof = [0x45, 0x4f, 0x46];
-  } else if (data.length >= 5 && data[0] === 0x49 && data[1] === 0x50 && data[2] === 0x53 && data[3] === 0x33 && data[4] === 0x32) {
+  } else if (
+    data.length >= 5 &&
+    data[0] === 0x49 &&
+    data[1] === 0x50 &&
+    data[2] === 0x53 &&
+    data[3] === 0x33 &&
+    data[4] === 0x32
+  ) {
     magic = 'IPS32';
     offsetWidth = 4;
     eof = [0x45, 0x45, 0x4f, 0x46];
@@ -30,7 +44,8 @@ export function parseIps(bytes) {
   let p = 5;
   const atEof = () => eof.every((b, i) => data[p + i] === b);
   while (!atEof()) {
-    if (p + offsetWidth + 2 > data.length) throw new Error('Truncated IPS record');
+    if (p + offsetWidth + 2 > data.length)
+      throw new Error('Truncated IPS record');
     let offset = 0;
     for (let i = 0; i < offsetWidth; i++) offset = offset * 256 + data[p + i];
     p += offsetWidth;
@@ -56,7 +71,8 @@ export function emitIps32(records) {
   const sorted = [...records].sort((a, b) => a.offset - b.offset);
   let size = 5 + 4;
   for (const r of sorted) {
-    if (r.bytes.length === 0 || r.bytes.length > 0xffff) throw new Error(`Unemittable IPS record at 0x${r.offset.toString(16)}`);
+    if (r.bytes.length === 0 || r.bytes.length > 0xffff)
+      throw new Error(`Unemittable IPS record at 0x${r.offset.toString(16)}`);
     size += 4 + 2 + r.bytes.length;
   }
   const out = new Uint8Array(size);
@@ -82,7 +98,10 @@ export function emitIps32(records) {
 }
 
 function hex(bytes) {
-  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  return [...bytes]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
 }
 
 function rangesOverlap(aStart, aEnd, bStart, bEnd) {
@@ -98,7 +117,8 @@ export function mergeIpsRecords(perMod) {
   const conflicts = [];
   const flat = [];
   for (const { mod, records } of perMod) {
-    for (const r of records) flat.push({ mod, offset: r.offset, bytes: r.bytes });
+    for (const r of records)
+      flat.push({ mod, offset: r.offset, bytes: r.bytes });
   }
   const seen = new Set();
   for (let i = 0; i < flat.length; i++) {
@@ -106,13 +126,24 @@ export function mergeIpsRecords(perMod) {
       const a = flat[i];
       const b = flat[j];
       if (a.mod === b.mod) continue;
-      if (!rangesOverlap(a.offset, a.offset + a.bytes.length, b.offset, b.offset + b.bytes.length)) continue;
+      if (
+        !rangesOverlap(
+          a.offset,
+          a.offset + a.bytes.length,
+          b.offset,
+          b.offset + b.bytes.length,
+        )
+      )
+        continue;
       const key = `${a.mod}<${b.mod}@${Math.min(a.offset, b.offset)}`;
       if (seen.has(key)) continue;
       seen.add(key);
       // Compare the overlapping window byte for byte.
       const start = Math.max(a.offset, b.offset);
-      const end = Math.min(a.offset + a.bytes.length, b.offset + b.bytes.length);
+      const end = Math.min(
+        a.offset + a.bytes.length,
+        b.offset + b.bytes.length,
+      );
       let same = true;
       for (let k = start; k < end; k++) {
         if (a.bytes[k - a.offset] !== b.bytes[k - b.offset]) {
@@ -136,7 +167,14 @@ export function mergeIpsRecords(perMod) {
   // Dedupe identical ranges, keep first.
   const kept = [];
   for (const r of flat) {
-    if (!kept.some((k) => k.offset === r.offset && k.bytes.length === r.bytes.length && hex(k.bytes) === hex(r.bytes))) {
+    if (
+      !kept.some(
+        (k) =>
+          k.offset === r.offset &&
+          k.bytes.length === r.bytes.length &&
+          hex(k.bytes) === hex(r.bytes),
+      )
+    ) {
       kept.push(r);
     }
   }

@@ -1,5 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { parseSarc, buildSarc, filenameHash, groupByDirectory, bytesEqual } from '../src/sarc.js';
+import { describe, expect, it } from 'vitest';
+import {
+  buildSarc,
+  bytesEqual,
+  filenameHash,
+  groupByDirectory,
+  parseSarc,
+} from '../src/sarc.js';
 
 const enc = new TextEncoder();
 
@@ -13,16 +19,28 @@ describe('filenameHash', () => {
   });
   it('matches a known hash-order-first game entry', () => {
     // Gyml/Component/ExistConditionGParam/StageHigh... is hash-order first (0x1ed1)
-    expect(filenameHash('Gyml/Component/ExistConditionGParam/StageHigh.gear__ExistConditionGParam.bgyml')).toBe(0x1ed1);
+    expect(
+      filenameHash(
+        'Gyml/Component/ExistConditionGParam/StageHigh.gear__ExistConditionGParam.bgyml',
+      ),
+    ).toBe(0x1ed1);
   });
 });
 
 describe('sarc round-trip', () => {
   it('parses what it builds', () => {
-    const input = files(['a.txt', 'hello'], ['dir/b.bin', 'world!'], ['empty', '']);
+    const input = files(
+      ['a.txt', 'hello'],
+      ['dir/b.bin', 'world!'],
+      ['empty', ''],
+    );
     const bytes = buildSarc(input);
     const { files: out } = parseSarc(bytes);
-    expect(out.map((f) => f.name).sort()).toEqual(['a.txt', 'dir/b.bin', 'empty']);
+    expect(out.map((f) => f.name).sort()).toEqual([
+      'a.txt',
+      'dir/b.bin',
+      'empty',
+    ]);
     for (const f of out) {
       const want = input.find((i) => i.name === f.name).data;
       expect(bytesEqual(f.data, want)).toBe(true);
@@ -48,7 +66,11 @@ describe('sarc round-trip', () => {
 
   it('handles 2000 files', () => {
     const input = [];
-    for (let i = 0; i < 2000; i++) input.push({ name: `Gyml/Cat${i % 7}/file_${i}.bgyml`, data: enc.encode(`payload-${i}`) });
+    for (let i = 0; i < 2000; i++)
+      input.push({
+        name: `Gyml/Cat${i % 7}/file_${i}.bgyml`,
+        data: enc.encode(`payload-${i}`),
+      });
     const { files: out } = parseSarc(buildSarc(input));
     expect(out).toHaveLength(2000);
   });

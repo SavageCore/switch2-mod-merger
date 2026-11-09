@@ -1,5 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { parsePchtxt, findPchtxtConflicts, mergePchtxt, gameVersionHints } from '../src/exefs.js';
+import { describe, expect, it } from 'vitest';
+import {
+  findPchtxtConflicts,
+  gameVersionHints,
+  mergePchtxt,
+  parsePchtxt,
+} from '../src/exefs.js';
 
 const CUP = `@nsobid-D00E4F399E411D0613AA8D26B1C02FEF00000000000000000000000000000000
 
@@ -17,7 +22,11 @@ describe('parsePchtxt', () => {
   it('extracts enabled patches', () => {
     const patches = parsePchtxt(CUP);
     expect(patches).toHaveLength(2);
-    expect(patches[0]).toMatchObject({ address: 0x00bb1364, size: 4, hex: '1F2003D5' });
+    expect(patches[0]).toMatchObject({
+      address: 0x00bb1364,
+      size: 4,
+      hex: '1F2003D5',
+    });
   });
 
   it('ignores disabled blocks', () => {

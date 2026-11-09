@@ -1,8 +1,13 @@
 import JSZip from 'jszip';
-import { parseSarc, buildSarc, groupByDirectory, bytesEqual } from './sarc.js';
-import { zstdDecompress, zstdCompress } from './zstd.js';
-import { parsePchtxt, findPchtxtConflicts, mergePchtxt, gameVersionHints } from './exefs.js';
-import { parseIps, mergeIpsRecords } from './ips.js';
+import {
+  findPchtxtConflicts,
+  gameVersionHints,
+  mergePchtxt,
+  parsePchtxt,
+} from './exefs.js';
+import { mergeIpsRecords, parseIps } from './ips.js';
+import { buildSarc, bytesEqual, groupByDirectory, parseSarc } from './sarc.js';
+import { zstdCompress, zstdDecompress } from './zstd.js';
 
 const ZSTD_MAGIC = 0xfd2fb528;
 
@@ -17,7 +22,13 @@ function isZstd(bytes) {
 }
 
 function isSarc(bytes) {
-  return bytes.length >= 4 && bytes[0] === 0x53 && bytes[1] === 0x41 && bytes[2] === 0x52 && bytes[3] === 0x43;
+  return (
+    bytes.length >= 4 &&
+    bytes[0] === 0x53 &&
+    bytes[1] === 0x41 &&
+    bytes[2] === 0x52 &&
+    bytes[3] === 0x43
+  );
 }
 
 function fnv1a(bytes) {
@@ -33,7 +44,13 @@ function fnv1a(bytes) {
  *  Source capitalization is kept exactly; names are sorted alphabetically. */
 export function mergedModName(modNames) {
   const clean = modNames
-    .map((n) => n.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').trim().slice(0, 60))
+    .map((n) =>
+      n
+        // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping ASCII control chars from mod names is intentional
+        .replace(/[\\/:*?"<>|\x00-\x1f]/g, '_')
+        .trim()
+        .slice(0, 60),
+    )
     .filter((n) => n.length > 0);
   const unique = [...new Set(clean)];
   unique.sort((a, b) => {
@@ -53,7 +70,9 @@ export function isGameArchive(rel) {
 
 /** Split a zip entry path into { kind: 'romfs'|'exefs', rel } or null when unrelated. */
 export function normalizeEntryPath(fullPath) {
-  const parts = fullPath.split('/').filter((p) => p !== '' && p !== '.' && p !== '__MACOSX');
+  const parts = fullPath
+    .split('/')
+    .filter((p) => p !== '' && p !== '.' && p !== '__MACOSX');
   if (parts.some((p) => p === '.DS_Store')) return null;
   const idx = parts.findIndex((p) => p === 'romfs' || p === 'exefs');
   if (idx < 0 || idx === parts.length - 1) return null;
@@ -65,7 +84,12 @@ function topFolders(zip, onlyTop = null) {
   zip.forEach((relativePath, entry) => {
     if (entry.dir) return;
     const rawParts = relativePath.split('/').filter((p) => p !== '');
-    if (rawParts.includes('__MACOSX') || rawParts[rawParts.length - 1] === '.DS_Store' || rawParts.length < 2) return;
+    if (
+      rawParts.includes('__MACOSX') ||
+      rawParts[rawParts.length - 1] === '.DS_Store' ||
+      rawParts.length < 2
+    )
+      return;
     if (onlyTop !== null && rawParts[0] !== onlyTop) return;
     if (!tops.includes(rawParts[0])) tops.push(rawParts[0]);
   });
@@ -94,7 +118,11 @@ export async function readModZip(name, arrayBuffer, onlyTop = null) {
     if (!norm) return;
     jobs.push(
       entry.async('uint8array').then((data) => {
-        entries.push({ kind: norm.kind, rel: norm.rel, data: new Uint8Array(data) });
+        entries.push({
+          kind: norm.kind,
+          rel: norm.rel,
+          data: new Uint8Array(data),
+        });
       }),
     );
   });
@@ -107,7 +135,14 @@ export async function readModZip(name, arrayBuffer, onlyTop = null) {
 // Mod name with original casing: prefer the single top-level folder inside the
 // zip (ClassicGP/romfs/… → ClassicGP). Fall back to the zip filename when the
 // zip holds several mods or has romfs/ at its root.
-const NON_WRAPPER_TOPS = new Set(['romfs', 'exefs', 'atmosphere', 'cheats', 'romfs_ext', 'romfslite']);
+const NON_WRAPPER_TOPS = new Set([
+  'romfs',
+  'exefs',
+  'atmosphere',
+  'cheats',
+  'romfs_ext',
+  'romfslite',
+]);
 
 export function displayName(zipName, tops) {
   if (tops.size === 1) {
@@ -120,7 +155,11 @@ export function displayName(zipName, tops) {
 // exefs patch files (.pchtxt/.ips) are resolved in the exefs card, never by
 // per-file picks, so they stay out of looseConflicts.
 function isManagedExefs(rel) {
-  return rel.startsWith('exefs/') && (rel.toLowerCase().endsWith('.pchtxt') || rel.toLowerCase().endsWith('.ips'));
+  return (
+    rel.startsWith('exefs/') &&
+    (rel.toLowerCase().endsWith('.pchtxt') ||
+      rel.toLowerCase().endsWith('.ips'))
+  );
 }
 
 function checkVersionGate(mods) {
@@ -168,7 +207,7 @@ export async function scanSharedArchives(modZips) {
       }
       if (entry.dir) return;
       const norm = normalizeEntryPath(relativePath);
-      if (!norm || norm.kind !== 'romfs' || !isGameArchive(norm.rel)) return;
+      if (norm?.kind !== 'romfs' || !isGameArchive(norm.rel)) return;
       jobs.push(
         entry.async('uint8array').then((data) => {
           found.set(norm.rel, fnv1a(new Uint8Array(data)));
@@ -188,7 +227,12 @@ export async function scanSharedArchives(modZips) {
   }
   return [...byRel.entries()]
     .filter(([, v]) => v.mods.length >= 2)
-    .map(([rel, v]) => ({ rel, filename: rel.split('/').pop(), mods: v.mods, differing: v.hashes.size > 1 }))
+    .map(([rel, v]) => ({
+      rel,
+      filename: rel.split('/').pop(),
+      mods: v.mods,
+      differing: v.hashes.size > 1,
+    }))
     .sort((a, b) => (a.rel < b.rel ? -1 : 1));
 }
 
@@ -199,7 +243,8 @@ export async function scanSharedArchives(modZips) {
  */
 export async function analyzeMods(modZips, vanillaArches = null) {
   const mods = [];
-  for (const z of modZips) mods.push(await readModZip(z.name, z.arrayBuffer, z.variant ?? null));
+  for (const z of modZips)
+    mods.push(await readModZip(z.name, z.arrayBuffer, z.variant ?? null));
   checkVersionGate(mods);
 
   // Decompress + parse every .sarc.zs up front.
@@ -226,10 +271,18 @@ export async function analyzeMods(modZips, vanillaArches = null) {
         } else {
           looseMaps[i].set(`${e.kind}/${e.rel}`, e.data);
           if (e.kind === 'exefs' && e.rel.toLowerCase().endsWith('.pchtxt')) {
-            exefsPatches.push({ mod: mods[i].name, rel: e.rel, patches: parsePchtxt(new TextDecoder().decode(e.data)) });
+            exefsPatches.push({
+              mod: mods[i].name,
+              rel: e.rel,
+              patches: parsePchtxt(new TextDecoder().decode(e.data)),
+            });
           }
           if (e.kind === 'exefs' && e.rel.toLowerCase().endsWith('.ips')) {
-            exefsIps.push({ mod: mods[i].name, rel: e.rel, records: parseIps(e.data).records });
+            exefsIps.push({
+              mod: mods[i].name,
+              rel: e.rel,
+              records: parseIps(e.data).records,
+            });
           }
         }
       } catch (err) {
@@ -244,7 +297,8 @@ export async function analyzeMods(modZips, vanillaArches = null) {
   if (vanillaArches) {
     for (const [filename, bytes] of vanillaArches) {
       const raw = isZstd(bytes) ? await zstdDecompress(bytes) : bytes;
-      if (!isSarc(raw)) throw new Error(`Vanilla file ${filename} is not a SARC archive`);
+      if (!isSarc(raw))
+        throw new Error(`Vanilla file ${filename} is not a SARC archive`);
       const { files } = parseSarc(raw);
       vanilla.set(filename, new Map(files.map((f) => [f.name, f.data])));
     }
@@ -254,31 +308,39 @@ export async function analyzeMods(modZips, vanillaArches = null) {
   const archiveRels = new Set(sarcMaps.flatMap((m) => [...m.keys()]));
   for (const rel of [...archiveRels].sort()) {
     const holders = [];
-    for (let i = 0; i < mods.length; i++) if (sarcMaps[i].has(rel)) holders.push(i);
+    for (let i = 0; i < mods.length; i++)
+      if (sarcMaps[i].has(rel)) holders.push(i);
     const filename = rel.split('/').pop();
     const vanillaFiles = vanilla.get(filename) ?? vanilla.get(rel) ?? null;
 
     const innerNames = new Set();
-    for (const i of holders) for (const n of sarcMaps[i].get(rel).files.keys()) innerNames.add(n);
+    for (const i of holders)
+      for (const n of sarcMaps[i].get(rel).files.keys()) innerNames.add(n);
 
     const identical = [];
     const unique = []; // { inner, mod }
     const differing = []; // { inner, variants: [modIdx], auto: modIdx|null }
     for (const inner of innerNames) {
-      const present = holders.filter((i) => sarcMaps[i].get(rel).files.has(inner));
+      const present = holders.filter((i) =>
+        sarcMaps[i].get(rel).files.has(inner),
+      );
       if (present.length === 1) {
         unique.push({ inner, mod: present[0] });
         continue;
       }
       const first = sarcMaps[present[0]].get(rel).files.get(inner);
-      const allSame = present.every((i) => bytesEqual(sarcMaps[i].get(rel).files.get(inner), first));
+      const allSame = present.every((i) =>
+        bytesEqual(sarcMaps[i].get(rel).files.get(inner), first),
+      );
       if (allSame) {
         identical.push(inner);
-      } else if (vanillaFiles && vanillaFiles.has(inner)) {
+      } else if (vanillaFiles?.has(inner)) {
         const v = vanillaFiles.get(inner);
-        const unchanged = present.filter((i) => bytesEqual(sarcMaps[i].get(rel).files.get(inner), v));
-        const changed = present.filter((i) => !bytesEqual(sarcMaps[i].get(rel).files.get(inner), v));
-        if (changed.length === 1) differing.push({ inner, variants: present, auto: changed[0] });
+        const changed = present.filter(
+          (i) => !bytesEqual(sarcMaps[i].get(rel).files.get(inner), v),
+        );
+        if (changed.length === 1)
+          differing.push({ inner, variants: present, auto: changed[0] });
         else differing.push({ inner, variants: present, auto: null });
       } else {
         differing.push({ inner, variants: present, auto: null });
@@ -292,10 +354,15 @@ export async function analyzeMods(modZips, vanillaArches = null) {
       identicalCount: identical.length,
       unique,
       autoResolved: differing.filter((d) => d.auto !== null),
-      groups: groupByDirectory(needsPick.map((d) => d.inner)).map(([dir, paths]) => ({
-        dir,
-        files: paths.map((inner) => ({ inner, variants: differing.find((d) => d.inner === inner).variants })),
-      })),
+      groups: groupByDirectory(needsPick.map((d) => d.inner)).map(
+        ([dir, paths]) => ({
+          dir,
+          files: paths.map((inner) => ({
+            inner,
+            variants: differing.find((d) => d.inner === inner).variants,
+          })),
+        }),
+      ),
     });
   }
 
@@ -306,14 +373,17 @@ export async function analyzeMods(modZips, vanillaArches = null) {
   const looseConflicts = []; // { rel, variants, auto }
   for (const rel of [...looseRels].sort()) {
     const holders = [];
-    for (let i = 0; i < mods.length; i++) if (looseMaps[i].has(rel)) holders.push(i);
+    for (let i = 0; i < mods.length; i++)
+      if (looseMaps[i].has(rel)) holders.push(i);
     if (holders.length === 1) {
       looseUnique.push({ rel, mod: holders[0] });
       continue;
     }
     const first = looseMaps[holders[0]].get(rel);
-    if (holders.every((i) => bytesEqual(looseMaps[i].get(rel), first))) looseIdentical.push(rel);
-    else if (!isManagedExefs(rel)) looseConflicts.push({ rel, variants: holders, auto: null });
+    if (holders.every((i) => bytesEqual(looseMaps[i].get(rel), first)))
+      looseIdentical.push(rel);
+    else if (!isManagedExefs(rel))
+      looseConflicts.push({ rel, variants: holders, auto: null });
   }
 
   // exefs .ips files merge at record level after overlap checking.
@@ -324,7 +394,12 @@ export async function analyzeMods(modZips, vanillaArches = null) {
   for (const rel of pchtxtRels) {
     const perMod = exefsPatches.filter((p) => p.rel === rel);
     const conflicts = findPchtxtConflicts(perMod);
-    exefs.push({ rel, kind: 'pchtxt', mods: perMod.map((p) => p.mod), conflicts });
+    exefs.push({
+      rel,
+      kind: 'pchtxt',
+      mods: perMod.map((p) => p.mod),
+      conflicts,
+    });
   }
   const ipsRels = [...new Set(exefsIps.map((p) => p.rel))].sort();
   for (const rel of ipsRels) {
@@ -333,12 +408,28 @@ export async function analyzeMods(modZips, vanillaArches = null) {
     exefs.push({ rel, kind: 'ips', mods: perMod.map((p) => p.mod), conflicts });
   }
   for (const c of looseConflicts.filter(
-    (l) => l.rel.startsWith('exefs/') && !l.rel.toLowerCase().endsWith('.pchtxt') && !l.rel.toLowerCase().endsWith('.ips'),
+    (l) =>
+      l.rel.startsWith('exefs/') &&
+      !l.rel.toLowerCase().endsWith('.pchtxt') &&
+      !l.rel.toLowerCase().endsWith('.ips'),
   )) {
-    exefs.push({ rel: c.rel.slice('exefs/'.length), kind: 'binary', mods: c.variants.map((i) => mods[i].name), conflicts: [{ address: null }] });
+    exefs.push({
+      rel: c.rel.slice('exefs/'.length),
+      kind: 'binary',
+      mods: c.variants.map((i) => mods[i].name),
+      conflicts: [{ address: null }],
+    });
   }
 
-  return { mods: mods.map((m) => m.name), archives, looseIdentical, looseUnique, looseConflicts, exefs, _internal: { sarcMaps, looseMaps, mods } };
+  return {
+    mods: mods.map((m) => m.name),
+    archives,
+    looseIdentical,
+    looseUnique,
+    looseConflicts,
+    exefs,
+    _internal: { sarcMaps, looseMaps, mods },
+  };
 }
 
 /**
@@ -348,7 +439,11 @@ export async function analyzeMods(modZips, vanillaArches = null) {
  * @param {(done: number, total: number, label: string) => void} onProgress
  * @returns {Promise<{ zipBytes: Uint8Array, manifest: object }>}
  */
-export async function buildMerged(analysis, resolutions, onProgress = () => {}) {
+export async function buildMerged(
+  analysis,
+  resolutions,
+  onProgress = () => {},
+) {
   const { sarcMaps, looseMaps, mods } = analysis._internal;
   const picks = resolutions.picks ?? new Map();
   const manifest = {
@@ -375,12 +470,18 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
   for (const arch of archiveJobs) {
     onProgress(step++, total, `Merging ${arch.rel.split('/').pop()}…`);
     const holders = arch.holders;
-    const allSame = arch.groups.length === 0 && arch.autoResolved.length === 0 && arch.unique.length === 0;
+    const allSame =
+      arch.groups.length === 0 &&
+      arch.autoResolved.length === 0 &&
+      arch.unique.length === 0;
     if (allSame) {
       // Byte-identical everywhere: copy the compressed bytes verbatim.
       const src = sarcMaps[holders[0]].get(arch.rel).verbatim;
       romfs.file(arch.rel, src, { binary: true });
-      manifest.archives[arch.rel] = { action: 'copied-verbatim', from: mods[holders[0]].name };
+      manifest.archives[arch.rel] = {
+        action: 'copied-verbatim',
+        from: mods[holders[0]].name,
+      };
       continue;
     }
     // Base order from the first holder; new files appended in first-seen order.
@@ -398,14 +499,20 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
     const sources = {};
     const outFiles = [];
     for (const inner of ordered) {
-      const present = holders.filter((i) => sarcMaps[i].get(arch.rel).files.has(inner));
+      const present = holders.filter((i) =>
+        sarcMaps[i].get(arch.rel).files.has(inner),
+      );
       let chosen;
       if (present.length === 1) {
         chosen = present[0];
         sources[inner] = { from: mods[chosen].name, how: 'only-in-one-mod' };
       } else {
         const first = sarcMaps[present[0]].get(arch.rel).files.get(inner);
-        if (present.every((i) => bytesEqual(sarcMaps[i].get(arch.rel).files.get(inner), first))) {
+        if (
+          present.every((i) =>
+            bytesEqual(sarcMaps[i].get(arch.rel).files.get(inner), first),
+          )
+        ) {
           chosen = present[0];
           sources[inner] = { from: mods[chosen].name, how: 'identical' };
         } else {
@@ -422,7 +529,10 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
           }
         }
       }
-      outFiles.push({ name: inner, data: sarcMaps[chosen].get(arch.rel).files.get(inner) });
+      outFiles.push({
+        name: inner,
+        data: sarcMaps[chosen].get(arch.rel).files.get(inner),
+      });
     }
     const rebuilt = buildSarc(outFiles, { littleEndian: true });
     const compressed = await zstdCompress(rebuilt, 10);
@@ -430,10 +540,16 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
     const counts = {};
     const detail = {};
     for (const [inner, s] of Object.entries(sources)) {
-      counts[`${s.from} (${s.how})`] = (counts[`${s.from} (${s.how})`] ?? 0) + 1;
+      counts[`${s.from} (${s.how})`] =
+        (counts[`${s.from} (${s.how})`] ?? 0) + 1;
       if (s.how !== 'identical') detail[inner] = s;
     }
-    manifest.archives[arch.rel] = { action: 'merged', files: outFiles.length, bySource: counts, detail };
+    manifest.archives[arch.rel] = {
+      action: 'merged',
+      files: outFiles.length,
+      bySource: counts,
+      detail,
+    };
   }
 
   onProgress(step, total, 'Packing remaining files…');
@@ -445,26 +561,46 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
       const [kind, ...rest] = rel.split('/');
       const restPath = rest.join('/');
       const holders = [];
-      for (let j = 0; j < mods.length; j++) if (looseMaps[j].has(rel)) holders.push(j);
+      for (let j = 0; j < mods.length; j++)
+        if (looseMaps[j].has(rel)) holders.push(j);
       const folder = kind === 'romfs' ? romfs : exefs;
       if (holders.length === 1) {
         folder.file(restPath, data, { binary: true });
         manifest.loose[rel] = { from: mods[i].name, how: 'only-in-one-mod' };
-      } else if (holders.every((j) => bytesEqual(looseMaps[j].get(rel), data))) {
+      } else if (
+        holders.every((j) => bytesEqual(looseMaps[j].get(rel), data))
+      ) {
         folder.file(restPath, data, { binary: true });
         manifest.loose[rel] = { from: mods[i].name, how: 'identical' };
-      } else if (kind === 'exefs' && restPath.toLowerCase().endsWith('.pchtxt')) {
-        const named = holders.map((j) => ({ mod: mods[j].name, text: new TextDecoder().decode(looseMaps[j].get(rel)) }));
+      } else if (
+        kind === 'exefs' &&
+        restPath.toLowerCase().endsWith('.pchtxt')
+      ) {
+        const named = holders.map((j) => ({
+          mod: mods[j].name,
+          text: new TextDecoder().decode(looseMaps[j].get(rel)),
+        }));
         folder.file(restPath, mergePchtxt(named));
-        manifest.exefs[restPath] = { action: 'concatenated-pchtxt', from: named.map((n) => n.mod) };
+        manifest.exefs[restPath] = {
+          action: 'concatenated-pchtxt',
+          from: named.map((n) => n.mod),
+        };
       } else if (kind === 'exefs' && restPath.toLowerCase().endsWith('.ips')) {
-        const perMod = holders.map((j) => ({ mod: mods[j].name, records: parseIps(looseMaps[j].get(rel)).records }));
+        const perMod = holders.map((j) => ({
+          mod: mods[j].name,
+          records: parseIps(looseMaps[j].get(rel)).records,
+        }));
         const { merged, conflicts } = mergeIpsRecords(perMod);
         if (conflicts.length > 0) {
-          throw new Error(`Overlapping IPS patches in ${restPath}: ${conflicts.map((c) => `0x${c.address.toString(16).toUpperCase()}`).join(', ')}`);
+          throw new Error(
+            `Overlapping IPS patches in ${restPath}: ${conflicts.map((c) => `0x${c.address.toString(16).toUpperCase()}`).join(', ')}`,
+          );
         }
         folder.file(restPath, merged, { binary: true });
-        manifest.exefs[restPath] = { action: 'merged-ips', from: perMod.map((p) => p.mod) };
+        manifest.exefs[restPath] = {
+          action: 'merged-ips',
+          from: perMod.map((p) => p.mod),
+        };
       } else {
         const key = `loose:${rel}`;
         if (!picks.has(key)) throw new Error(`No resolution for ${rel}`);
@@ -478,7 +614,9 @@ export async function buildMerged(analysis, resolutions, onProgress = () => {}) 
 
   // Note: the manifest is returned for the on-page summary, not written into
   // the zip, so the download stays a clean mod folder.
-  const zipBytes = new Uint8Array(await out.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }));
+  const zipBytes = new Uint8Array(
+    await out.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }),
+  );
   onProgress(total, total, 'Done');
   return { zipBytes, manifest };
 }

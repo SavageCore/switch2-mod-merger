@@ -1,4 +1,4 @@
-import { init, decompress, compress } from '@bokuweb/zstd-wasm';
+import { compress, decompress, init } from '@bokuweb/zstd-wasm';
 
 let ready = null;
 
@@ -10,11 +10,16 @@ export function ensureZstd() {
 /** @returns {Promise<Uint8Array>} */
 export async function zstdDecompress(bytes) {
   await ensureZstd();
-  return decompress(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes));
+  return decompress(
+    bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes),
+  );
 }
 
 /** @returns {Promise<Uint8Array>} */
 export async function zstdCompress(bytes, level = 10) {
   await ensureZstd();
-  return compress(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes), level);
+  return compress(
+    bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes),
+    level,
+  );
 }

@@ -30,7 +30,12 @@ export function parsePchtxt(text) {
     const address = parseInt(m[1], 16);
     const bytes = m[2].replace(/\s+/g, '');
     if (bytes.length % 2 !== 0) continue;
-    patches.push({ address, size: bytes.length / 2, hex: bytes.toUpperCase(), line });
+    patches.push({
+      address,
+      size: bytes.length / 2,
+      hex: bytes.toUpperCase(),
+      line,
+    });
   }
   return patches;
 }
@@ -75,6 +80,7 @@ export function gameVersionHints(text) {
   // e.g. "Some Game v1.8.0 (Build 917504)" in a mod's pchtxt comment header
   const versions = new Set();
   for (const m of text.matchAll(/v(\d+\.\d+\.\d+)/g)) versions.add(m[1]);
-  for (const m of text.matchAll(/build\s+(\d+)/gi)) versions.add(`build ${m[1]}`);
+  for (const m of text.matchAll(/build\s+(\d+)/gi))
+    versions.add(`build ${m[1]}`);
   return [...versions];
 }

@@ -1,0 +1,8 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      glob: "*.{js,mjs,cjs,html,css,json}"
+      run: pnpm exec biome check --staged
+    tests:
+      run: pnpm test

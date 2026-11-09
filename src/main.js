@@ -1,4 +1,10 @@
-import { analyzeMods, buildMerged, scanSharedArchives, mergedModName, detectVariants } from './merge.js';
+import {
+  analyzeMods,
+  buildMerged,
+  detectVariants,
+  mergedModName,
+  scanSharedArchives,
+} from './merge.js';
 
 const state = {
   mods: [], // { name, arrayBuffer }
@@ -34,9 +40,11 @@ function refreshModList() {
   state.mods.forEach((m, i) => {
     const li = document.createElement('li');
     const size = formatSize(m.arrayBuffer.byteLength);
-    const label = m.variants.length >= 2 && m.variant ? `${m.name} (${m.variant})` : m.name;
+    const label =
+      m.variants.length >= 2 && m.variant ? `${m.name} (${m.variant})` : m.name;
     li.innerHTML = `<span><strong>${escapeHtml(label)}</strong> <span class="filetoggle">${size}</span></span>`;
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.textContent = 'Remove';
     btn.className = 'secondary';
     btn.onclick = () => {
@@ -79,10 +87,14 @@ function refreshModList() {
       ul.appendChild(wrap);
     }
   });
-  const needChoice = state.mods.filter((m) => m.variants.length >= 2 && !m.variant);
+  const needChoice = state.mods.filter(
+    (m) => m.variants.length >= 2 && !m.variant,
+  );
   $('nextBtn').disabled = state.mods.length < 2 || needChoice.length > 0;
   $('modsHint').textContent =
-    needChoice.length > 0 ? `Choose a version for: ${needChoice.map((m) => m.name).join(', ')}` : '';
+    needChoice.length > 0
+      ? `Choose a version for: ${needChoice.map((m) => m.name).join(', ')}`
+      : '';
 }
 
 function refreshVanillaList() {
@@ -93,6 +105,7 @@ function refreshVanillaList() {
     const size = formatSize(bytes.length);
     li.innerHTML = `<span><strong>${escapeHtml(name)}</strong> <span class="filetoggle">${size}</span></span>`;
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.textContent = 'Remove';
     btn.className = 'secondary';
     btn.onclick = () => {
@@ -107,7 +120,13 @@ function refreshVanillaList() {
 }
 
 function escapeHtml(s) {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return s.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
+        c
+      ],
+  );
 }
 
 function plural(n, one, many = `${one}s`) {
@@ -137,7 +156,11 @@ async function refreshSharedBox() {
   }
   try {
     state.shared = await scanSharedArchives(
-      state.mods.map((m) => ({ name: m.name, arrayBuffer: m.arrayBuffer, variant: m.variant ?? null })),
+      state.mods.map((m) => ({
+        name: m.name,
+        arrayBuffer: m.arrayBuffer,
+        variant: m.variant ?? null,
+      })),
     );
   } catch (err) {
     if (run !== sharedRun) return;
@@ -147,13 +170,18 @@ async function refreshSharedBox() {
   }
   if (run !== sharedRun) return;
   if (state.shared.length === 0) {
-    box.innerHTML = '<div class="card"><p class="filetoggle">No archive is replaced by more than one mod - these mods don\'t conflict, install them side by side instead of merging.</p></div>';
+    box.innerHTML =
+      '<div class="card"><p class="filetoggle">No archive is replaced by more than one mod - these mods don\'t conflict, install them side by side instead of merging.</p></div>';
     return;
   }
   const card = document.createElement('div');
   card.className = 'card';
-  const needVanilla = state.shared.filter((s) => s.differing && !vanillaFor(s.filename));
-  const ready = state.shared.filter((s) => s.differing && vanillaFor(s.filename));
+  const needVanilla = state.shared.filter(
+    (s) => s.differing && !vanillaFor(s.filename),
+  );
+  const ready = state.shared.filter(
+    (s) => s.differing && vanillaFor(s.filename),
+  );
   status.textContent =
     needVanilla.length > 0
       ? `- ${needVanilla.length} shared file${needVanilla.length > 1 ? 's need' : ' needs'} vanilla`
@@ -177,7 +205,9 @@ async function refreshSharedBox() {
       const v = vanillaFor(s.filename);
       p.innerHTML =
         `<code>romfs/${escapeHtml(s.rel)}</code> ` +
-        (v ? `<span class="pill good">vanilla added (${escapeHtml(v)})</span>` : '') +
+        (v
+          ? `<span class="pill good">vanilla added (${escapeHtml(v)})</span>`
+          : '') +
         `<br><span class="filetoggle">replaced by ${s.mods.map(escapeHtml).join(', ')}</span>`;
     }
     card.appendChild(p);
@@ -215,7 +245,12 @@ async function addModFiles(fileList) {
     } catch {
       variants = [];
     }
-    state.mods.push({ name: shortName(f.name), arrayBuffer, variants, variant: null });
+    state.mods.push({
+      name: shortName(f.name),
+      arrayBuffer,
+      variants,
+      variant: null,
+    });
   }
   resetResults();
   refreshModList();
@@ -238,15 +273,25 @@ function pickKey(archRel, inner) {
 
 function renderAnalysis(analysis) {
   const modNames = analysis.mods;
-  const totalDiffs = analysis.archives.reduce((n, a) => n + a.groups.reduce((m, g) => m + g.files.length, 0), 0);
-  const totalAuto = analysis.archives.reduce((n, a) => n + a.autoResolved.length, 0);
+  const totalDiffs = analysis.archives.reduce(
+    (n, a) => n + a.groups.reduce((m, g) => m + g.files.length, 0),
+    0,
+  );
+  const totalAuto = analysis.archives.reduce(
+    (n, a) => n + a.autoResolved.length,
+    0,
+  );
 
   $('summary').innerHTML =
     `<div class="card"><h3>Merged from: ${modNames.map(escapeHtml).join(' + ')}</h3>` +
     `<span class="pill good">${plural(analysis.archives.length, 'shared archive')}</span>` +
     `<span class="pill ${totalDiffs ? 'warn' : 'good'}">${plural(totalDiffs, 'file needs', 'files need')} a pick</span>` +
-    (totalAuto ? `<span class="pill good">${totalAuto} auto-resolved from vanilla</span>` : '') +
-    (analysis.looseConflicts.length ? `<span class="pill warn">${plural(analysis.looseConflicts.length, 'loose file conflict')}</span>` : '') +
+    (totalAuto
+      ? `<span class="pill good">${totalAuto} auto-resolved from vanilla</span>`
+      : '') +
+    (analysis.looseConflicts.length
+      ? `<span class="pill warn">${plural(analysis.looseConflicts.length, 'loose file conflict')}</span>`
+      : '') +
     `</div>`;
 
   // Global bulk bar.
@@ -255,16 +300,21 @@ function renderAnalysis(analysis) {
   if (totalDiffs > 0) {
     const row = document.createElement('div');
     row.className = 'bulkrow';
-    row.innerHTML = '<span>Undecided files default to nothing - bulk-pick:</span>';
+    row.innerHTML =
+      '<span>Undecided files default to nothing - bulk-pick:</span>';
     modNames.forEach((name, i) => {
       const b = document.createElement('button');
+      b.type = 'button';
       b.className = 'secondary';
       b.textContent = `All from ${name}`;
       b.onclick = () => {
         for (const a of analysis.archives) {
-          for (const g of a.groups) for (const f of g.files) state.picks.set(pickKey(a.rel, f.inner), i);
+          for (const g of a.groups)
+            for (const f of g.files)
+              state.picks.set(pickKey(a.rel, f.inner), i);
         }
-        for (const c of analysis.looseConflicts) state.picks.set(`loose:${c.rel}`, i);
+        for (const c of analysis.looseConflicts)
+          state.picks.set(`loose:${c.rel}`, i);
         renderAnalysis(analysis);
       };
       row.appendChild(b);
@@ -280,8 +330,10 @@ function renderAnalysis(analysis) {
     card.className = 'card';
     const short = arch.rel.split('/').pop();
     let html = `<h3><code>${escapeHtml(short)}</code>`;
-    if (arch.groups.length === 0 && analysis.looseConflicts.length === 0) html += ' <span class="pill good">merges cleanly</span>';
-    else if (arch.groups.length > 0) html += ' <span class="pill warn">needs picks</span>';
+    if (arch.groups.length === 0 && analysis.looseConflicts.length === 0)
+      html += ' <span class="pill good">merges cleanly</span>';
+    else if (arch.groups.length > 0)
+      html += ' <span class="pill warn">needs picks</span>';
     html += `</h3><p class="filetoggle">${arch.fileCount} files, ${arch.identicalCount} identical, ${arch.unique.length} only in one mod, ${arch.autoResolved.length} auto-resolved</p>`;
     card.innerHTML = html;
 
@@ -294,10 +346,12 @@ function renderAnalysis(analysis) {
       const involved = [...new Set(group.files.flatMap((f) => f.variants))];
       involved.forEach((i) => {
         const b = document.createElement('button');
+        b.type = 'button';
         b.className = 'secondary';
         b.textContent = `Group from ${modNames[i]}`;
         b.onclick = () => {
-          for (const f of group.files) state.picks.set(pickKey(arch.rel, f.inner), i);
+          for (const f of group.files)
+            state.picks.set(pickKey(arch.rel, f.inner), i);
           renderAnalysis(analysis);
         };
         bulkRow.appendChild(b);
@@ -362,7 +416,8 @@ function renderAnalysis(analysis) {
   if (analysis.looseConflicts.length > 0) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = '<h3>Other conflicting files <span class="pill warn">needs picks</span></h3>';
+    card.innerHTML =
+      '<h3>Other conflicting files <span class="pill warn">needs picks</span></h3>';
     analysis.looseConflicts.forEach((c) => {
       const key = `loose:${c.rel}`;
       const wrap = document.createElement('div');
@@ -398,7 +453,10 @@ function renderAnalysis(analysis) {
     let blocking = false;
     analysis.exefs.forEach((e) => {
       const p = document.createElement('p');
-      if ((e.kind === 'pchtxt' || e.kind === 'ips') && e.conflicts.length === 0) {
+      if (
+        (e.kind === 'pchtxt' || e.kind === 'ips') &&
+        e.conflicts.length === 0
+      ) {
         const verb = e.kind === 'pchtxt' ? 'concatenated' : 'merged';
         p.innerHTML =
           e.mods.length > 1
@@ -430,20 +488,27 @@ function renderAnalysis(analysis) {
 
 function undecidedCount(analysis) {
   let n = 0;
-  for (const a of analysis.archives) for (const g of a.groups) for (const f of g.files) {
-    if (!state.picks.has(pickKey(a.rel, f.inner))) n++;
-  }
-  for (const c of analysis.looseConflicts) if (!state.picks.has(`loose:${c.rel}`)) n++;
+  for (const a of analysis.archives)
+    for (const g of a.groups)
+      for (const f of g.files) {
+        if (!state.picks.has(pickKey(a.rel, f.inner))) n++;
+      }
+  for (const c of analysis.looseConflicts)
+    if (!state.picks.has(`loose:${c.rel}`)) n++;
   return n;
 }
 
 function updateMergeReadiness(analysis) {
   const n = undecidedCount(analysis);
-  const blocking = document.querySelector('#exefs .card')?.dataset.blocking === '1';
+  const blocking =
+    document.querySelector('#exefs .card')?.dataset.blocking === '1';
   const btn = $('mergeBtn');
   btn.disabled = n > 0 || blocking;
-  const reason =
-    blocking ? 'Resolve the exefs conflict above (or drop one of the mods).' : n > 0 ? `${plural(n, 'file')} still undecided.` : '';
+  const reason = blocking
+    ? 'Resolve the exefs conflict above (or drop one of the mods).'
+    : n > 0
+      ? `${plural(n, 'file')} still undecided.`
+      : '';
   $('mergeStatus').textContent = reason;
   btn.title = reason;
 }
@@ -453,8 +518,15 @@ async function onAnalyze() {
   $('analyzeBtn').disabled = true;
   $('analyzeStatus').textContent = 'Analyzing…';
   try {
-    const modZips = state.mods.map((m) => ({ name: m.name, arrayBuffer: m.arrayBuffer.slice(0), variant: m.variant ?? null }));
-    state.analysis = await analyzeMods(modZips, state.vanilla.size > 0 ? state.vanilla : null);
+    const modZips = state.mods.map((m) => ({
+      name: m.name,
+      arrayBuffer: m.arrayBuffer.slice(0),
+      variant: m.variant ?? null,
+    }));
+    state.analysis = await analyzeMods(
+      modZips,
+      state.vanilla.size > 0 ? state.vanilla : null,
+    );
     renderAnalysis(state.analysis);
     $('analyzeStatus').textContent = '';
     showPage('pageResults');
@@ -472,10 +544,14 @@ async function onMerge() {
   $('mergeProgress').hidden = false;
   $('mergeStatus').textContent = '';
   try {
-    const { zipBytes, manifest } = await buildMerged(state.analysis, { picks: state.picks }, (done, total, label) => {
-      $('mergeBar').style.width = `${(done / total) * 100}%`;
-      $('mergeStatus').textContent = label;
-    });
+    const { zipBytes, manifest } = await buildMerged(
+      state.analysis,
+      { picks: state.picks },
+      (done, total, label) => {
+        $('mergeBar').style.width = `${(done / total) * 100}%`;
+        $('mergeStatus').textContent = label;
+      },
+    );
     const blob = new Blob([zipBytes], { type: 'application/zip' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -490,7 +566,8 @@ async function onMerge() {
     for (const a of Object.values(summary.archives)) delete a.detail;
     $('manifestPre').textContent = JSON.stringify(summary, null, 2);
     $('manifestWrap').hidden = false;
-    $('mergeStatus').textContent = 'Done. Import the zip with Import Mod from ZIP (right-click the game, Configure, Add-ons).';
+    $('mergeStatus').textContent =
+      'Done. Import the zip with Import Mod from ZIP (right-click the game, Configure, Add-ons).';
     $('mergeBtn').disabled = false;
   } catch (err) {
     $('errors').hidden = false;
@@ -502,7 +579,7 @@ async function onMerge() {
   }
 }
 
-function wireDrop(zone, onFiles) {
+function wireDrop(zone, inputEl, onFiles) {
   zone.addEventListener('dragover', (e) => {
     e.preventDefault();
     zone.classList.add('over');
@@ -513,17 +590,25 @@ function wireDrop(zone, onFiles) {
     zone.classList.remove('over');
     if (e.dataTransfer.files.length > 0) onFiles(e.dataTransfer.files);
   });
+  zone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      inputEl.click();
+    }
+  });
 }
 
 function init() {
   $('themeBtn').addEventListener('click', () => {
-    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    const next =
+      document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
     document.documentElement.dataset.theme = next;
     try {
       localStorage.setItem('s2mm-theme', next);
     } catch {}
   });
-  const short = typeof __COMMIT_SHORT__ !== 'undefined' ? __COMMIT_SHORT__ : 'dev';
+  const short =
+    typeof __COMMIT_SHORT__ !== 'undefined' ? __COMMIT_SHORT__ : 'dev';
   const full = typeof __COMMIT_FULL__ !== 'undefined' ? __COMMIT_FULL__ : '';
   const hashEl = $('buildHash');
   if (full && full !== 'unknown') {
@@ -535,14 +620,16 @@ function init() {
     hashEl.textContent = short;
   }
   const input = $('modFiles');
-  wireDrop($('dropzone'), (files) => addModFiles(files));
+  wireDrop($('dropzone'), input, (files) => addModFiles(files));
   input.addEventListener('change', () => {
     const picked = [...input.files];
     input.value = '';
     addModFiles(picked);
   });
   const vanillaInput = $('vanillaFiles');
-  wireDrop($('vanillaDropzone'), (files) => addVanillaFiles(files));
+  wireDrop($('vanillaDropzone'), vanillaInput, (files) =>
+    addVanillaFiles(files),
+  );
   vanillaInput.addEventListener('change', () => {
     const picked = [...vanillaInput.files];
     vanillaInput.value = '';

@@ -39,6 +39,11 @@ await page.setInputFiles('#modFiles', [modA, modB]);
 await page.locator('#modList li').first().waitFor({ timeout: 30000 });
 if ((await page.locator('#modList li').count()) !== 2) throw new Error('expected 2 mods listed');
 await page.locator('#analyzeBtn:enabled').waitFor({ timeout: 30000 });
+await page.locator('#sharedBox .card').waitFor({ timeout: 30000 });
+const sharedText = await page.locator('#sharedBox').textContent();
+if (!sharedText.includes('general_format.Product_180.sarc.zs') || !sharedText.toLowerCase().includes('vanilla')) {
+  throw new Error('shared archive prompt missing: ' + sharedText);
+}
 await page.click('#analyzeBtn');
 await page.waitForSelector('#archives .card', { timeout: 60000 });
 console.log('analyzed, archive cards:', await page.locator('#archives .card').count());

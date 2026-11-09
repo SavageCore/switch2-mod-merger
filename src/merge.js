@@ -19,6 +19,15 @@ function isSarc(bytes) {
   return bytes.length >= 4 && bytes[0] === 0x53 && bytes[1] === 0x41 && bytes[2] === 0x52 && bytes[3] === 0x43;
 }
 
+function fnv1a(bytes) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i++) {
+    h ^= bytes[i];
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16);
+}
+
 /** Compressed SARC archives mods ship: .sarc.zs and TOTK-style .pack.zs. */
 export function isGameArchive(rel) {
   const lower = rel.toLowerCase();
@@ -73,6 +82,47 @@ function checkVersionGate(mods) {
       `Game version mismatch: ${[...versionsByMod.entries()].map(([m, s]) => `${m} (${[...s].join(', ')})`).join('; ')}. Merge mods built for the same game version.`,
     );
   }
+}
+
+/**
+ * Lightweight pre-scan: which game archives are replaced by 2+ mods, and
+ * whether their contents actually differ. Reads only the archive entries
+ * (no decompression), so it runs right after upload to tell the user which
+ * vanilla files to supply for auto-merge.
+ * @param {Array<{name: string, arrayBuffer: ArrayBuffer}>} modZips
+ * @returns {Promise<Array<{rel: string, filename: string, mods: string[], differing: boolean}>>}
+ */
+export async function scanSharedArchives(modZips) {
+  const perMod = [];
+  for (const z of modZips) {
+    const zip = await JSZip.loadAsync(z.arrayBuffer);
+    const found = new Map();
+    const jobs = [];
+    zip.forEach((relativePath, entry) => {
+      if (entry.dir) return;
+      const norm = normalizeEntryPath(relativePath);
+      if (!norm || norm.kind !== 'romfs' || !isGameArchive(norm.rel)) return;
+      jobs.push(
+        entry.async('uint8array').then((data) => {
+          found.set(norm.rel, fnv1a(new Uint8Array(data)));
+        }),
+      );
+    });
+    await Promise.all(jobs);
+    perMod.push({ name: z.name, found });
+  }
+  const byRel = new Map();
+  for (const m of perMod) {
+    for (const [rel, hash] of m.found) {
+      if (!byRel.has(rel)) byRel.set(rel, { mods: [], hashes: new Set() });
+      byRel.get(rel).mods.push(m.name);
+      byRel.get(rel).hashes.add(hash);
+    }
+  }
+  return [...byRel.entries()]
+    .filter(([, v]) => v.mods.length >= 2)
+    .map(([rel, v]) => ({ rel, filename: rel.split('/').pop(), mods: v.mods, differing: v.hashes.size > 1 }))
+    .sort((a, b) => (a.rel < b.rel ? -1 : 1));
 }
 
 /**

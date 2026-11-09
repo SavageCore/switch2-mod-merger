@@ -1,8 +1,9 @@
-import { analyzeMods, buildMerged } from './merge.js';
+import { analyzeMods, buildMerged, scanSharedArchives } from './merge.js';
 
 const state = {
   mods: [], // { name, arrayBuffer }
   vanilla: new Map(), // filename -> Uint8Array
+  shared: null, // scanSharedArchives() result
   analysis: null,
   picks: new Map(), // resolution key -> modIdx
   outputUrl: null,
@@ -28,6 +29,7 @@ function refreshModList() {
       state.mods.splice(i, 1);
       resetResults();
       refreshModList();
+      refreshSharedBox();
     };
     li.appendChild(btn);
     ul.appendChild(li);
@@ -49,6 +51,7 @@ function refreshVanillaList() {
       state.vanilla.delete(name);
       resetResults();
       refreshVanillaList();
+      refreshSharedBox();
     };
     li.appendChild(btn);
     ul.appendChild(li);
@@ -57,6 +60,64 @@ function refreshVanillaList() {
 
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/** Match an uploaded vanilla file to a shared archive filename. */
+function vanillaFor(filename) {
+  const bare = filename.replace(/\.zs$/i, '');
+  for (const key of state.vanilla.keys()) {
+    if (key === filename || key === bare) return key;
+  }
+  return null;
+}
+
+async function refreshSharedBox() {
+  const box = $('sharedBox');
+  box.innerHTML = '';
+  if (state.mods.length < 2) {
+    state.shared = null;
+    return;
+  }
+  try {
+    state.shared = await scanSharedArchives(state.mods.map((m) => ({ name: m.name, arrayBuffer: m.arrayBuffer })));
+  } catch (err) {
+    box.innerHTML = `<div class="card"><p class="filetoggle">Could not scan mod zips (${escapeHtml(err.message)}). Analyze will report problems.</p></div>`;
+    state.shared = null;
+    return;
+  }
+  if (state.shared.length === 0) {
+    box.innerHTML = '<div class="card"><p class="filetoggle">No archive is replaced by more than one mod - everything merges cleanly.</p></div>';
+    return;
+  }
+  const card = document.createElement('div');
+  card.className = 'card';
+  const needVanilla = state.shared.filter((s) => s.differing && !vanillaFor(s.filename));
+  const ready = state.shared.filter((s) => s.differing && vanillaFor(s.filename));
+  let html = '<h3>Shared archives</h3>';
+  if (needVanilla.length > 0) {
+    html += `<p>Add the <em>vanilla (unmodded)</em> copy of each file below - taken from your game dump, same filename - and shared files auto-merge. Without it, you pick a winner per group in step 3.</p>`;
+  } else if (ready.length > 0) {
+    html += '<p>Vanilla files present - shared files will auto-merge.</p>';
+  }
+  card.innerHTML = html;
+  for (const s of state.shared) {
+    const p = document.createElement('p');
+    if (!s.differing) {
+      p.innerHTML =
+        `<code>${escapeHtml(s.filename)}</code> <span class="pill good">identical in ${s.mods.length} mods</span>` +
+        `<br><span class="filetoggle">${s.mods.map(escapeHtml).join(', ')}</span>`;
+    } else {
+      const v = vanillaFor(s.filename);
+      p.innerHTML =
+        `<code>${escapeHtml(s.filename)}</code> ` +
+        (v
+          ? `<span class="pill good">vanilla added (${escapeHtml(v)})</span>`
+          : '<span class="pill warn">add the vanilla file to auto-merge</span>') +
+        `<br><span class="filetoggle">replaced by ${s.mods.map(escapeHtml).join(', ')}</span>`;
+    }
+    card.appendChild(p);
+  }
+  box.appendChild(card);
 }
 
 function resetResults() {
@@ -79,6 +140,7 @@ async function addModFiles(fileList) {
   }
   resetResults();
   refreshModList();
+  refreshSharedBox();
 }
 
 async function addVanillaFiles(fileList) {
@@ -87,6 +149,7 @@ async function addVanillaFiles(fileList) {
   }
   resetResults();
   refreshVanillaList();
+  refreshSharedBox();
 }
 
 function pickKey(archRel, inner) {

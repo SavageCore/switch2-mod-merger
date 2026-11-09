@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 import { buildSarc, parseSarc } from '../src/sarc.js';
 import { zstdCompress, zstdDecompress } from '../src/zstd.js';
-import { analyzeMods, buildMerged } from '../src/merge.js';
+import { analyzeMods, buildMerged, scanSharedArchives } from '../src/merge.js';
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -130,5 +130,33 @@ describe('analyze + merge', () => {
     const b = await modZip('B', { sarcEntries: [['Gyml/X/a.bgyml', '2']] });
     const analysis = await analyzeMods([a, b]);
     await expect(buildMerged(analysis, { picks: new Map() })).rejects.toThrow(/No resolution/);
+  });
+});
+
+describe('scanSharedArchives', () => {
+  it('detects a differing archive shared by three mods, ignores unique ones', async () => {
+    const opts = (text) => ({ sarcEntries: [['Gyml/X/a.bgyml', text]], sarcPath: 'Sys/d.sarc.zs' });
+    const a = await modZip('A', opts('1'));
+    const b = await modZip('B', opts('2'));
+    const c = await modZip('C', { ...opts('3'), loose: { 'Only/here.txt': 'x' } });
+    const shared = await scanSharedArchives([a, b, c]);
+    expect(shared).toHaveLength(1);
+    expect(shared[0]).toMatchObject({ rel: 'Sys/d.sarc.zs', filename: 'd.sarc.zs', differing: true });
+    expect(shared[0].mods).toEqual(['A', 'B', 'C']);
+  });
+
+  it('marks byte-identical shared archives as clean', async () => {
+    const opts = { sarcEntries: [['Gyml/X/a.bgyml', 'same']] };
+    const a = await modZip('A', opts);
+    const b = await modZip('B', opts);
+    const shared = await scanSharedArchives([a, b]);
+    expect(shared).toHaveLength(1);
+    expect(shared[0].differing).toBe(false);
+  });
+
+  it('returns empty when no archive is shared', async () => {
+    const a = await modZip('A', { sarcPath: 'Sys/a.sarc.zs', sarcEntries: [['Gyml/X/a.bgyml', '1']] });
+    const b = await modZip('B', { sarcPath: 'Sys/b.sarc.zs', sarcEntries: [['Gyml/X/a.bgyml', '1']] });
+    expect(await scanSharedArchives([a, b])).toHaveLength(0);
   });
 });

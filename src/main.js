@@ -42,18 +42,18 @@ function refreshModList() {
     const size = formatSize(m.arrayBuffer.byteLength);
     const label =
       m.variants.length >= 2 && m.variant ? `${m.name} (${m.variant})` : m.name;
-    li.innerHTML = `<span><strong>${escapeHtml(label)}</strong> <span class="filetoggle">${size}</span></span>`;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = 'Remove';
-    btn.className = 'secondary';
-    btn.onclick = () => {
-      state.mods.splice(i, 1);
-      resetResults();
-      refreshModList();
-      refreshSharedBox();
-    };
-    li.appendChild(btn);
+    const text = document.createElement('span');
+    text.title = label;
+    text.innerHTML = `<strong>${escapeHtml(label)}</strong> <span class="filetoggle">${size}</span>`;
+    li.appendChild(text);
+    li.appendChild(
+      trashButton(`Remove ${m.name}`, () => {
+        state.mods.splice(i, 1);
+        resetResults();
+        refreshModList();
+        refreshSharedBox();
+      }),
+    );
     ul.appendChild(li);
     if (m.variants.length >= 2) {
       const wrap = document.createElement('div');
@@ -103,18 +103,18 @@ function refreshVanillaList() {
   for (const [name, bytes] of state.vanilla) {
     const li = document.createElement('li');
     const size = formatSize(bytes.length);
-    li.innerHTML = `<span><strong>${escapeHtml(name)}</strong> <span class="filetoggle">${size}</span></span>`;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = 'Remove';
-    btn.className = 'secondary';
-    btn.onclick = () => {
-      state.vanilla.delete(name);
-      resetResults();
-      refreshVanillaList();
-      refreshSharedBox();
-    };
-    li.appendChild(btn);
+    const text = document.createElement('span');
+    text.title = name;
+    text.innerHTML = `<strong>${escapeHtml(name)}</strong> <span class="filetoggle">${size}</span>`;
+    li.appendChild(text);
+    li.appendChild(
+      trashButton(`Remove ${name}`, () => {
+        state.vanilla.delete(name);
+        resetResults();
+        refreshVanillaList();
+        refreshSharedBox();
+      }),
+    );
     ul.appendChild(li);
   }
 }
@@ -131,6 +131,24 @@ function escapeHtml(s) {
 
 function plural(n, one, many = `${one}s`) {
   return `${n} ${n === 1 ? one : many}`;
+}
+
+const TRASH_PATHS =
+  '<path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />' +
+  '<path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />' +
+  '<line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" />';
+
+function trashButton(label, onclick) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'iconbtn sm';
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+  btn.innerHTML =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" ' +
+    `stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><title>${escapeHtml(label)}</title>${TRASH_PATHS}</svg>`;
+  btn.onclick = onclick;
+  return btn;
 }
 
 /** Match an uploaded vanilla file to a shared archive filename. */
@@ -184,10 +202,8 @@ async function refreshSharedBox() {
   );
   status.textContent =
     needVanilla.length > 0
-      ? `- ${needVanilla.length} shared file${needVanilla.length > 1 ? 's need' : ' needs'} vanilla`
-      : ready.length > 0
-        ? '- vanilla ready'
-        : '';
+      ? `- ${needVanilla.length} shared ${needVanilla.length > 1 ? 'files need' : 'file needs'} vanilla`
+      : '';
   let html = '<h3>Shared archives</h3>';
   if (needVanilla.length > 0) {
     html += `<p>Add the vanilla copy of each file below (from your game dump, same filename).</p>`;

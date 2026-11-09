@@ -149,6 +149,20 @@ h2 {
   align-items: center;
   gap: 0.5rem;
 }
+.filelist li > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+button.iconbtn.sm {
+  padding: 0.3rem;
+}
+button.iconbtn.sm svg {
+  width: 1rem;
+  height: 1rem;
+}
 
 button,
 .button {

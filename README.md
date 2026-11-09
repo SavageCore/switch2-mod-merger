@@ -29,7 +29,10 @@ It refuses to merge mods built for different game versions (detected from patch 
 
 ## Install a merged mod
 
-Extract the downloaded zip into a new folder under your emulator's mod directory (`load/<title-id>/…`), alongside your other mods. Disable the two source mods to avoid one shadowing the merged copy.
+No manual install: on the game's configuration page (right-click the game, Configure, Add-ons) use
+**Import Mod from ZIP** and pick the downloaded file. The emulator installs it as one mod -
+the output zip already has the expected `romfs/` + `exefs/` layout. Afterwards, disable the source
+mods so they don't shadow the merged copy.
 
 ## Development
 

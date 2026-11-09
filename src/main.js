@@ -408,7 +408,7 @@ async function onMerge() {
     for (const a of Object.values(summary.archives)) delete a.detail;
     $('manifestPre').textContent = JSON.stringify(summary, null, 2);
     $('manifestWrap').hidden = false;
-    $('mergeStatus').textContent = 'Done. Extract the zip into a new folder under your emulator\'s load/<title-id>/ folder.';
+    $('mergeStatus').textContent = 'Done. Import the zip with Import Mod from ZIP (right-click the game, Configure, Add-ons).';
   } catch (err) {
     $('errors').hidden = false;
     $('errorPre').textContent = err.message;

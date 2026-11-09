@@ -433,9 +433,12 @@ function undecidedCount(analysis) {
 function updateMergeReadiness(analysis) {
   const n = undecidedCount(analysis);
   const blocking = document.querySelector('#exefs .card')?.dataset.blocking === '1';
-  $('mergeBtn').disabled = n > 0 || blocking;
-  $('mergeStatus').textContent =
-    blocking ? 'Resolve the exefs conflict above (or drop one of the mods).' : n > 0 ? `${plural(n, 'file')} still undecided.` : 'Ready to merge.';
+  const btn = $('mergeBtn');
+  btn.disabled = n > 0 || blocking;
+  const reason =
+    blocking ? 'Resolve the exefs conflict above (or drop one of the mods).' : n > 0 ? `${plural(n, 'file')} still undecided.` : '';
+  $('mergeStatus').textContent = reason;
+  btn.title = reason;
 }
 
 async function onAnalyze() {

@@ -53,16 +53,18 @@ h2 { font-size: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 
 button, .button {
   background: var(--accent);
   color: var(--accent-fg);
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   padding: 0.55rem 1.1rem;
   font-size: 1rem;
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  vertical-align: middle;
 }
 button:disabled { opacity: 0.45; cursor: default; }
 button.secondary { background: transparent; border: 1px solid var(--border); color: var(--fg); padding: 0.3rem 0.7rem; font-size: 0.85rem; }
+button.secondary.match { padding: 0.55rem 1.1rem; font-size: 1rem; }
 .status { color: var(--muted); margin-left: 0.5rem; }
 
 .card {

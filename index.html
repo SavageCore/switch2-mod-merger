@@ -18,35 +18,44 @@
         </p>
       </header>
 
-      <section id="upload">
+      <section id="pageMods">
         <h2>1. Mods</h2>
+        <p class="filetoggle">Step 1 of 3</p>
         <div id="dropzone" class="dropzone" tabindex="0">
           <p>Drop mod <code>.zip</code> files here, or <label class="filelink">choose files<input id="modFiles" type="file" accept=".zip" multiple hidden /></label></p>
         </div>
         <ul id="modList" class="filelist"></ul>
+        <p><button id="nextBtn" disabled>Next</button></p>
+      </section>
 
-        <h2>2. Vanilla archives <span id="vanillaStatus" class="optional"></span></h2>
+      <section id="pageShared" hidden>
+        <h2>2. Shared archives <span id="vanillaStatus" class="optional"></span></h2>
+        <p class="filetoggle">Step 2 of 3</p>
         <p class="hint">
-          For mods that replace the <em>same</em> files - installed together, only one copy would win.
-          The merger builds one mod.zip from them. Files changed by several mods need the
-          <em>vanilla (unmodded)</em> copy to merge automatically -
+          These mods replace the <em>same</em> files - installed together, only one copy would win.
+          Files changed by several mods need the <em>vanilla (unmodded)</em> copy, taken from the same
+          path under your game dump's <code>romfs/</code>, to merge automatically -
           otherwise you pick a winner per group in step 3.
         </p>
         <div id="sharedBox"></div>
-        <p><label class="filelink">Choose vanilla files<input id="vanillaFiles" type="file" accept=".sarc.zs,.sarc,.pack.zs,.pack,.zs" multiple hidden /></label></p>
+        <h3>Vanilla files</h3>
+        <div id="vanillaDropzone" class="dropzone" tabindex="0">
+          <p>Drop vanilla archives here, or <label class="filelink">choose files<input id="vanillaFiles" type="file" accept=".sarc.zs,.sarc,.pack.zs,.pack,.zs" multiple hidden /></label></p>
+        </div>
         <ul id="vanillaList" class="filelist"></ul>
-
-        <p><button id="analyzeBtn" disabled>Analyze mods</button> <span id="analyzeStatus" class="status"></span></p>
+        <p><button id="backToModsBtn" class="secondary">Back</button> <button id="analyzeBtn">Analyze mods</button> <span id="analyzeStatus" class="status"></span></p>
       </section>
 
-      <section id="results" hidden>
-        <h2>3. Resolve differences</h2>
+      <section id="pageResults" hidden>
+        <h2>3. Resolve and merge</h2>
+        <p class="filetoggle">Step 3 of 3</p>
+        <p><button id="backToSharedBtn" class="secondary">Back</button></p>
         <div id="summary"></div>
         <div id="bulkBar"></div>
         <div id="archives"></div>
         <div id="loose"></div>
         <div id="exefs"></div>
-        <h2>4. Merge</h2>
+        <h3>Merge</h3>
         <p><button id="mergeBtn">Merge &amp; download</button></p>
         <div id="mergeProgress" class="progress" hidden><div id="mergeBar"></div></div>
         <p id="mergeStatus" class="status"></p>

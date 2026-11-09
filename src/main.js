@@ -11,6 +11,13 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 
+const PAGES = ['pageMods', 'pageShared', 'pageResults'];
+
+function showPage(id) {
+  for (const p of PAGES) $(p).hidden = p !== id;
+  window.scrollTo(0, 0);
+}
+
 function shortName(filename) {
   return filename.replace(/\.zip$/i, '');
 }
@@ -34,7 +41,7 @@ function refreshModList() {
     li.appendChild(btn);
     ul.appendChild(li);
   });
-  $('analyzeBtn').disabled = state.mods.length < 2;
+  $('nextBtn').disabled = state.mods.length < 2;
 }
 
 function refreshVanillaList() {
@@ -71,7 +78,10 @@ function vanillaFor(filename) {
   return null;
 }
 
+let sharedRun = 0;
+
 async function refreshSharedBox() {
+  const run = ++sharedRun;
   const box = $('sharedBox');
   const status = $('vanillaStatus');
   box.innerHTML = '';
@@ -83,10 +93,12 @@ async function refreshSharedBox() {
   try {
     state.shared = await scanSharedArchives(state.mods.map((m) => ({ name: m.name, arrayBuffer: m.arrayBuffer })));
   } catch (err) {
+    if (run !== sharedRun) return;
     box.innerHTML = `<div class="card"><p class="filetoggle">Could not scan mod zips (${escapeHtml(err.message)}). Analyze will report problems.</p></div>`;
     state.shared = null;
     return;
   }
+  if (run !== sharedRun) return;
   if (state.shared.length === 0) {
     box.innerHTML = '<div class="card"><p class="filetoggle">No archive is replaced by more than one mod - these mods don\'t conflict, install them side by side instead of merging.</p></div>';
     return;
@@ -117,7 +129,7 @@ async function refreshSharedBox() {
     } else {
       const v = vanillaFor(s.filename);
       p.innerHTML =
-        `<code>${escapeHtml(s.filename)}</code> ` +
+        `<code>romfs/${escapeHtml(s.rel)}</code> ` +
         (v ? `<span class="pill good">vanilla added (${escapeHtml(v)})</span>` : '') +
         `<br><span class="filetoggle">replaced by ${s.mods.map(escapeHtml).join(', ')}</span>`;
     }
@@ -129,7 +141,7 @@ async function refreshSharedBox() {
 function resetResults() {
   state.analysis = null;
   state.picks = new Map();
-  $('results').hidden = true;
+  $('pageResults').hidden = true;
   $('errors').hidden = true;
   $('downloadWrap').hidden = true;
   $('manifestWrap').hidden = true;
@@ -151,6 +163,7 @@ async function addModFiles(fileList) {
 
 async function addVanillaFiles(fileList) {
   for (const f of fileList) {
+    if (!/\.(sarc|pack|zs)$/i.test(f.name)) continue;
     state.vanilla.set(f.name, new Uint8Array(await f.arrayBuffer()));
   }
   resetResults();
@@ -374,14 +387,15 @@ async function onAnalyze() {
   try {
     const modZips = state.mods.map((m) => ({ name: m.name, arrayBuffer: m.arrayBuffer.slice(0) }));
     state.analysis = await analyzeMods(modZips, state.vanilla.size > 0 ? state.vanilla : null);
-    $('results').hidden = false;
     renderAnalysis(state.analysis);
     $('analyzeStatus').textContent = '';
+    showPage('pageResults');
   } catch (err) {
     $('errors').hidden = false;
     $('errorPre').textContent = err.message;
+    $('errors').scrollIntoView();
   } finally {
-    $('analyzeBtn').disabled = state.mods.length < 2;
+    $('analyzeBtn').disabled = false;
   }
 }
 
@@ -410,34 +424,36 @@ async function onMerge() {
   } catch (err) {
     $('errors').hidden = false;
     $('errorPre').textContent = err.message;
+    $('errors').scrollIntoView();
   } finally {
     $('mergeProgress').hidden = true;
     updateMergeReadiness(state.analysis);
   }
 }
 
+function wireDrop(zone, onFiles) {
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    zone.classList.add('over');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('over');
+    if (e.dataTransfer.files.length > 0) onFiles(e.dataTransfer.files);
+  });
+}
+
 function init() {
-  const dz = $('dropzone');
   const input = $('modFiles');
-  dz.addEventListener('click', (e) => {
-    if (e.target === input) return;
-  });
-  dz.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dz.classList.add('over');
-  });
-  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
-  dz.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dz.classList.remove('over');
-    if (e.dataTransfer.files.length > 0) addModFiles(e.dataTransfer.files);
-  });
+  wireDrop($('dropzone'), (files) => addModFiles(files));
   input.addEventListener('change', () => {
     const picked = [...input.files];
     input.value = '';
     addModFiles(picked);
   });
   const vanillaInput = $('vanillaFiles');
+  wireDrop($('vanillaDropzone'), (files) => addVanillaFiles(files));
   vanillaInput.addEventListener('change', () => {
     const picked = [...vanillaInput.files];
     vanillaInput.value = '';
@@ -445,8 +461,15 @@ function init() {
   });
   $('analyzeBtn').addEventListener('click', onAnalyze);
   $('mergeBtn').addEventListener('click', onMerge);
+  $('nextBtn').addEventListener('click', () => {
+    showPage('pageShared');
+    refreshSharedBox();
+  });
+  $('backToModsBtn').addEventListener('click', () => showPage('pageMods'));
+  $('backToSharedBtn').addEventListener('click', () => showPage('pageShared'));
   refreshModList();
   refreshVanillaList();
+  showPage('pageMods');
 }
 
 init();

@@ -6,7 +6,6 @@ const state = {
   shared: null, // scanSharedArchives() result
   analysis: null,
   picks: new Map(), // resolution key -> modIdx
-  outputUrl: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -143,12 +142,19 @@ function resetResults() {
   state.picks = new Map();
   $('pageResults').hidden = true;
   $('errors').hidden = true;
-  $('downloadWrap').hidden = true;
+  $('restartWrap').hidden = true;
   $('manifestWrap').hidden = true;
-  if (state.outputUrl) {
-    URL.revokeObjectURL(state.outputUrl);
-    state.outputUrl = null;
-  }
+}
+
+function resetAll() {
+  state.mods = [];
+  state.vanilla = new Map();
+  state.shared = null;
+  resetResults();
+  refreshModList();
+  refreshVanillaList();
+  refreshSharedBox();
+  showPage('pageMods');
 }
 
 async function addModFiles(fileList) {
@@ -409,13 +415,15 @@ async function onMerge() {
       $('mergeStatus').textContent = label;
     });
     const blob = new Blob([zipBytes], { type: 'application/zip' });
-    if (state.outputUrl) URL.revokeObjectURL(state.outputUrl);
-    state.outputUrl = URL.createObjectURL(blob);
-    const link = $('downloadLink');
-    link.href = state.outputUrl;
-    link.download = `${mergedModName(state.analysis.mods)}-merged.zip`;
-    $('downloadWrap').hidden = false;
-    link.click();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${mergedModName(state.analysis.mods)}-merged.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    $('restartWrap').hidden = false;
     const summary = { ...manifest };
     for (const a of Object.values(summary.archives)) delete a.detail;
     $('manifestPre').textContent = JSON.stringify(summary, null, 2);
@@ -472,6 +480,7 @@ function init() {
   });
   $('analyzeBtn').addEventListener('click', onAnalyze);
   $('mergeBtn').addEventListener('click', onMerge);
+  $('restartBtn').addEventListener('click', resetAll);
   $('nextBtn').addEventListener('click', () => {
     showPage('pageShared');
     refreshSharedBox();

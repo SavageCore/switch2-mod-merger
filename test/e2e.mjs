@@ -71,6 +71,9 @@ const footer = await page.locator('#siteFooter').textContent();
 if (!footer.includes('SavageCore') || !/[0-9a-f]{7}/.test(footer)) {
   throw new Error('footer missing attribution/build hash: ' + footer);
 }
+await page.click('#restartBtn');
+await page.locator('#pageMods:not([hidden])').waitFor({ timeout: 10000 });
+if ((await page.locator('#modList li').count()) !== 0) throw new Error('restart did not clear mods');
 
 await browser.close();
 server.close();

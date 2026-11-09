@@ -103,6 +103,10 @@ function escapeHtml(s) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function plural(n, one, many = `${one}s`) {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
 /** Match an uploaded vanilla file to a shared archive filename. */
 function vanillaFor(filename) {
   const bare = filename.replace(/\.zs$/i, '');
@@ -232,10 +236,10 @@ function renderAnalysis(analysis) {
 
   $('summary').innerHTML =
     `<div class="card"><h3>Merged from: ${modNames.map(escapeHtml).join(' + ')}</h3>` +
-    `<span class="pill good">${analysis.archives.length} shared archive(s)</span>` +
-    `<span class="pill ${totalDiffs ? 'warn' : 'good'}">${totalDiffs} file(s) need a pick</span>` +
+    `<span class="pill good">${plural(analysis.archives.length, 'shared archive')}</span>` +
+    `<span class="pill ${totalDiffs ? 'warn' : 'good'}">${plural(totalDiffs, 'file needs', 'files need')} a pick</span>` +
     (totalAuto ? `<span class="pill good">${totalAuto} auto-resolved from vanilla</span>` : '') +
-    (analysis.looseConflicts.length ? `<span class="pill warn">${analysis.looseConflicts.length} loose file conflict(s)</span>` : '') +
+    (analysis.looseConflicts.length ? `<span class="pill warn">${plural(analysis.looseConflicts.length, 'loose file conflict')}</span>` : '') +
     `</div>`;
 
   // Global bulk bar.
@@ -427,7 +431,7 @@ function updateMergeReadiness(analysis) {
   const blocking = document.querySelector('#exefs .card')?.dataset.blocking === '1';
   $('mergeBtn').disabled = n > 0 || blocking;
   $('mergeStatus').textContent =
-    blocking ? 'Resolve the exefs conflict above (or drop one of the mods).' : n > 0 ? `${n} file(s) still undecided.` : 'Ready to merge.';
+    blocking ? 'Resolve the exefs conflict above (or drop one of the mods).' : n > 0 ? `${plural(n, 'file')} still undecided.` : 'Ready to merge.';
 }
 
 async function onAnalyze() {

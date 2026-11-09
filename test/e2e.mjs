@@ -56,6 +56,8 @@ if (!sharedText.includes('romfs/System/GymlArchive/general_format.Product_180.sa
 await page.click('#analyzeBtn');
 await page.waitForSelector('#archives .card', { timeout: 60000 });
 console.log('analyzed, archive cards:', await page.locator('#archives .card').count());
+const exefsText = await page.locator('#exefs').textContent();
+if (!exefsText.includes('only in ClassicGP')) throw new Error('single-source pchtxt mislabeled: ' + exefsText);
 
 // Picks: cups from ClassicGP, everything else from LightOpt.
 const card = page.locator('#archives .card').first();

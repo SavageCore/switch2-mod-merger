@@ -392,7 +392,10 @@ function renderAnalysis(analysis) {
     analysis.exefs.forEach((e) => {
       const p = document.createElement('p');
       if (e.kind === 'pchtxt' && e.conflicts.length === 0) {
-        p.innerHTML = `<code>${escapeHtml(e.rel)}</code> <span class="pill good">concatenated (${e.mods.map(escapeHtml).join(' + ')})</span>`;
+        p.innerHTML =
+          e.mods.length > 1
+            ? `<code>${escapeHtml(e.rel)}</code> <span class="pill good">concatenated (${e.mods.map(escapeHtml).join(' + ')})</span>`
+            : `<code>${escapeHtml(e.rel)}</code> <span class="pill good">only in ${escapeHtml(e.mods[0])}</span>`;
       } else if (e.conflicts.length > 0) {
         blocking = true;
         p.innerHTML = `<code>${escapeHtml(e.rel)}</code> <span class="pill bad">overlapping patches - cannot merge</span>`;

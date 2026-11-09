@@ -88,7 +88,7 @@ async function refreshSharedBox() {
     return;
   }
   if (state.shared.length === 0) {
-    box.innerHTML = '<div class="card"><p class="filetoggle">No archive is replaced by more than one mod - everything merges on its own.</p></div>';
+    box.innerHTML = '<div class="card"><p class="filetoggle">No archive is replaced by more than one mod - these mods don\'t conflict, install them side by side instead of merging.</p></div>';
     return;
   }
   const card = document.createElement('div');

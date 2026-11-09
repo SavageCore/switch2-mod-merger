@@ -12,11 +12,11 @@ async function sarcZs(entries) {
   return zstdCompress(raw, 3);
 }
 
-async function modZip(name, { sarcEntries = null, sarcPath = 'System/Test/data.sarc.zs', loose = {}, exefs = {} } = {}) {
+async function modZip(name, { sarcEntries = null, sarcPath = 'System/Test/data.sarc.zs', loose = {}, exefs = {} } = {}, prefix = '') {
   const zip = new JSZip();
-  if (sarcEntries) zip.file(`romfs/${sarcPath}`, await sarcZs(sarcEntries));
-  for (const [path, text] of Object.entries(loose)) zip.file(`romfs/${path}`, text);
-  for (const [path, content] of Object.entries(exefs)) zip.file(`exefs/${path}`, content);
+  if (sarcEntries) zip.file(`${prefix}romfs/${sarcPath}`, await sarcZs(sarcEntries));
+  for (const [path, text] of Object.entries(loose)) zip.file(`${prefix}romfs/${path}`, text);
+  for (const [path, content] of Object.entries(exefs)) zip.file(`${prefix}exefs/${path}`, content);
   return { name, arrayBuffer: await zip.generateAsync({ type: 'arraybuffer' }) };
 }
 
@@ -117,6 +117,29 @@ describe('analyze + merge', () => {
     const b = await modZip('B', { sarcEntries: [['Gyml/X/a.bgyml', '2']] });
     const analysis = await analyzeMods([a, b]);
     await expect(buildMerged(analysis, { picks: new Map() })).rejects.toThrow(/No resolution/);
+  });
+});
+
+describe('mod display names', () => {
+  it('takes casing from a single top-level folder', async () => {
+    const a = await modZip('classicgp.zip', { loose: { 'x.txt': '1' } }, 'ClassicGP/');
+    const b = await modZip('secrettracks.zip', { loose: { 'y.txt': '2' } }, 'SecretTracks/');
+    const analysis = await analyzeMods([a, b]);
+    expect(analysis.mods).toEqual(['ClassicGP', 'SecretTracks']);
+    const { zipBytes, manifest } = await buildMerged(analysis, { picks: new Map() });
+    expect(manifest.name).toBe('ClassicGP+SecretTracks');
+    const out = await JSZip.loadAsync(zipBytes);
+    expect(out.file('ClassicGP+SecretTracks/romfs/x.txt')).not.toBeNull();
+  });
+
+  it('falls back to the zip name for multi-mod zips and root-level romfs', async () => {
+    const zip = new JSZip();
+    zip.file('Light/romfs/x.txt', '1');
+    zip.file('Strong/romfs/x.txt', '2');
+    const multi = { name: 'perf.zip', arrayBuffer: await zip.generateAsync({ type: 'arraybuffer' }) };
+    const root = await modZip('plain.zip', { loose: { 'x.txt': '1' } });
+    const analysis = await analyzeMods([multi, root]);
+    expect(analysis.mods).toEqual(['perf.zip', 'plain.zip']);
   });
 });
 

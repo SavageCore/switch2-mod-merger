@@ -62,9 +62,14 @@ export function normalizeEntryPath(fullPath) {
 export async function readModZip(name, arrayBuffer) {
   const zip = await JSZip.loadAsync(arrayBuffer);
   const entries = [];
+  const tops = new Set();
   const jobs = [];
   zip.forEach((relativePath, entry) => {
     if (entry.dir) return;
+    const rawParts = relativePath.split('/').filter((p) => p !== '');
+    if (!rawParts.includes('__MACOSX') && rawParts[rawParts.length - 1] !== '.DS_Store' && rawParts.length >= 2) {
+      tops.add(rawParts[0]);
+    }
     const norm = normalizeEntryPath(relativePath);
     if (!norm) return;
     jobs.push(
@@ -74,7 +79,20 @@ export async function readModZip(name, arrayBuffer) {
     );
   });
   await Promise.all(jobs);
-  return { name, entries };
+  return { name: displayName(name, tops), entries };
+}
+
+// Mod name with original casing: prefer the single top-level folder inside the
+// zip (ClassicGP/romfs/… → ClassicGP). Fall back to the zip filename when the
+// zip holds several mods or has romfs/ at its root.
+const NON_WRAPPER_TOPS = new Set(['romfs', 'exefs', 'atmosphere', 'cheats', 'romfs_ext', 'romfslite']);
+
+export function displayName(zipName, tops) {
+  if (tops.size === 1) {
+    const [top] = tops;
+    if (!NON_WRAPPER_TOPS.has(top.toLowerCase())) return top;
+  }
+  return zipName;
 }
 
 function checkVersionGate(mods) {

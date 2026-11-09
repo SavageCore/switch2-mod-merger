@@ -169,7 +169,7 @@ async function addModFiles(fileList) {
 
 async function addVanillaFiles(fileList) {
   for (const f of fileList) {
-    if (!/\.(sarc|pack|zs)$/i.test(f.name)) continue;
+    if (!/\.(sarc|zs)$/i.test(f.name)) continue;
     state.vanilla.set(f.name, new Uint8Array(await f.arrayBuffer()));
   }
   resetResults();

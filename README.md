@@ -6,7 +6,7 @@ Combine Switch 2 mods that replace the same compressed archives, entirely in you
 
 ## What it does
 
-Many Switch 2 mods ship a full copy of a game archive (`.sarc.zs`, or TOTK-style `.pack.zs`) with only a handful of inner files changed. When two mods replace the same archive, only one can win - unless you merge them.
+Many Switch 2 mods ship a full copy of a game archive (`.sarc.zs`) with only a handful of inner files changed. When two mods replace the same archive, only one can win - unless you merge them.
 
 This tool:
 
@@ -21,7 +21,7 @@ It refuses to merge mods built for different game versions (detected from patch 
 
 ## Supported / not supported
 
-- ✅ Any number of mods sharing `.sarc.zs` / `.pack.zs` archives
+- ✅ Any number of mods sharing `.sarc.zs` archives
 - ✅ Same-file conflicts resolved by group pick or vanilla-assisted 3-way merge
 - ✅ `.pchtxt` concatenation with overlap detection, `.ips` passthrough
 - ❌ Two mods editing *different settings inside the same inner file* (e.g. two GYML tweaks in one `.bgyml`) - reported as a conflict, key-level merging is future work

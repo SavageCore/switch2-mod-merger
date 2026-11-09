@@ -45,10 +45,9 @@ export function mergedModName(modNames) {
   return (unique.length > 0 ? unique : ['merged']).join('+');
 }
 
-/** Compressed SARC archives mods ship: .sarc.zs and TOTK-style .pack.zs. */
+/** Compressed SARC archives mods ship. */
 export function isGameArchive(rel) {
-  const lower = rel.toLowerCase();
-  return lower.endsWith('.sarc.zs') || lower.endsWith('.pack.zs');
+  return rel.toLowerCase().endsWith('.sarc.zs');
 }
 
 /** Split a zip entry path into { kind: 'romfs'|'exefs', rel } or null when unrelated. */

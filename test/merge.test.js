@@ -40,19 +40,6 @@ describe('analyze + merge', () => {
     expect(Buffer.from(got).equals(Buffer.from(want))).toBe(true);
   });
 
-  it('merges TOTK-style .pack.zs archives too', async () => {
-    const a = await modZip('A', { sarcEntries: [['Actor/a.bgyml', '1']], sarcPath: 'Pack/Actor.pack.zs' });
-    const b = await modZip('B', { sarcEntries: [['Actor/a.bgyml', '2']], sarcPath: 'Pack/Actor.pack.zs' });
-    const analysis = await analyzeMods([a, b]);
-    expect(analysis.archives).toHaveLength(1);
-    expect(analysis.archives[0].rel).toBe('Pack/Actor.pack.zs');
-    const { zipBytes } = await buildMerged(analysis, { picks: new Map([['Pack/Actor.pack.zs\nActor/a.bgyml', 1]]) });
-    const out = await JSZip.loadAsync(zipBytes);
-    const mergedZs = await out.file('A+B/romfs/Pack/Actor.pack.zs').async('uint8array');
-    const { files } = parseSarc(await zstdDecompress(mergedZs));
-    expect(dec.decode(files[0].data)).toBe('2');
-  });
-
   it('flags disjoint changes for picking, then merges per picks', async () => {
     const a = await modZip('ClassicGP', {
       sarcEntries: [

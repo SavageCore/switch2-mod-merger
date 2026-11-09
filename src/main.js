@@ -445,6 +445,17 @@ function wireDrop(zone, onFiles) {
 }
 
 function init() {
+  const short = typeof __COMMIT_SHORT__ !== 'undefined' ? __COMMIT_SHORT__ : 'dev';
+  const full = typeof __COMMIT_FULL__ !== 'undefined' ? __COMMIT_FULL__ : '';
+  const hashEl = $('buildHash');
+  if (full && full !== 'unknown') {
+    const a = document.createElement('a');
+    a.href = `https://github.com/SavageCore/switch2-mod-merger/commit/${full}`;
+    a.textContent = short;
+    hashEl.replaceChildren(a);
+  } else {
+    hashEl.textContent = short;
+  }
   const input = $('modFiles');
   wireDrop($('dropzone'), (files) => addModFiles(files));
   input.addEventListener('change', () => {
